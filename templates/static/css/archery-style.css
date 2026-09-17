@@ -1587,3 +1587,51 @@ div.dataTables_wrapper .ui-widget-header {
 }
 #sidebar .content{ display:none;}
 }
+
+
+/* =========================================================
+   AVF CUSTOM DASHBOARD THEME - FIX GIAO DIỆN CHÍNH
+   ========================================================= */
+
+/* 1. Ép màu nền toàn bộ trang và Navbar trên cùng */
+body, #header, #user-nav, #user-nav > ul {
+    background-color: #0F4C75 !important; /* Xanh Navy đậm */
+}
+
+/* 2. Ép màu Sidebar bên trái */
+#sidebar, #sidebar > ul {
+    background-color: #0F4C75 !important;
+}
+
+/* Khử viền đen xấu ở các thẻ li của sidebar */
+#sidebar > ul > li {
+    border-top: 1px solid #1B6CA8 !important;
+    border-bottom: none !important;
+}
+
+/* 3. Đổi màu khi hover chuột và khi đang chọn (Active) Menu */
+#sidebar > ul > li:hover,
+#sidebar > ul > li.active {
+    background-color: #1B6CA8 !important; /* Xanh biển sáng hơn để làm nổi bật */
+}
+
+/* Xóa ảnh mũi tên lởm chởm mặc định của menu đang Active */
+#sidebar > ul > li.active > a {
+    background-image: none !important; 
+    background-color: transparent !important;
+    color: #FFFFFF !important;
+}
+
+/* 4. Chỉnh Menu User góc phải trên cùng (Viền và hover) */
+#user-nav > ul > li {
+    border-left: 1px solid #1B6CA8 !important;
+    border-right: none !important;
+}
+#user-nav > ul > li:hover, #user-nav > ul > li.open > a {
+    background-color: #1B6CA8 !important;
+}
+
+/* 5. Vùng nội dung chính bên phải (Content) */
+#content {
+    background-color: #F4F7F6 !important; /* Màu xám rất nhạt cho sáng sủa báo cáo */
+}

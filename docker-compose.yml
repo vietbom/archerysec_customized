@@ -1,5 +1,3 @@
-version: '3.6'
-
 services:
   db:
     image: postgres:12-alpine
@@ -11,7 +9,10 @@ services:
       - POSTGRES_USER=archerysec
 
   archerysec:
-    image: archerysec/archerysec
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: archerysec/archerysec-custom:local
     ports:
       - "8000:8000"
     expose:
@@ -36,7 +37,10 @@ services:
     container_name: archerysec
 
   archerysec-worker:
-    image: archerysec/archerysec
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: archerysec/archerysec-custom:local
     depends_on:
       - db
       - archerysec
@@ -64,14 +68,12 @@ services:
     ports:
       - "8090:8090"
     expose:
-    # ZAP is running on 8090, we want it to be accessible by our tools
       - "8090"
     environment:
       - ZAP_PORT=8090
     links:
       - archerysec
     container_name: zapscanner
-
 
   arachni:
     image: arachni/arachni
@@ -83,20 +85,6 @@ services:
     links:
       - archerysec
     container_name: arachniscanner
-
-#  openvas:
-#    image: avhost/docker-openvas
-#    ports:
-#      - "443:443"
-#      - "9390:9390"
-#      - "9392:9392"
-#    expose:
-#      - "9390"
-#      - "9392"
-#      - "443"
-#    links:
-#      - archerysec
-#    container_name: openvas
 
   mailhog:
     image: mailhog/mailhog

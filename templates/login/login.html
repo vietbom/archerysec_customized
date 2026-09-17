@@ -3,23 +3,33 @@
 <html lang="en">
 
 <head>
-    <title>Archery</title>
+    <title>Giải pháp giám sát bề mặt tấn công ArcherySec</title>
     <link rel="icon" href="{% static 'logo.png' %}" type="image/x-icon">
     <meta charset="UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <!--<link rel="stylesheet" type="text/css" href="{% static 'polls/style.css' %}">-->
     <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap.min.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'css/bootstrap-responsive.min.css' %}"/>
     <link rel="stylesheet" type="text/css" href="{% static 'css/archery-login.css' %}"/>
     <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet"/>
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,800' rel='stylesheet' type='text/css'>
-
 </head>
 <body>
 <div id="loginbox">
     <form id="loginform" class="form-vertical" action="{% url 'auth' %}" method="POST">{% csrf_token %}
-        <div class="control-group normal_text"><h3><img src="{% static 'archery.png' %}"
-                                                        style="max-width:190px; margin-top: 10px;" alt=""/></h3></div>
+        
+        <!-- BẮT ĐẦU: TIÊU ĐỀ VÀ LOGO -->
+        <div class="control-group normal_text" style="padding-bottom: 0;">
+            <!-- Tiêu đề đồ án thêm mới -->
+            <h4 style="color: #0F4C75; font-weight: bold; font-size: 16px; line-height: 1.6; margin-bottom: 15px; padding: 0 10px;">
+                TRIỂN KHAI GIẢI PHÁP GIÁM SÁT BỀ MẶT TẤN CÔNG ARCHERYSEC TRONG QUY TRÌNH PHÁT TRIỂN PHẦN MỀM AN TOÀN
+            </h4>
+            <!-- Logo -->
+            <h3>
+                <img src="{% static 'archery.png' %}" style="max-width:140px; margin-top: 5px;" alt=""/>
+            </h3>
+        </div>
+        <!-- KẾT THÚC: TIÊU ĐỀ VÀ LOGO -->
+
         <div class="control-group">
             <div class="controls">
                 <div class="main_input_box">
@@ -39,6 +49,7 @@
                 </div>
             </div>
         </div>
+        
         <div class="control-group">
             <div class="controls">
                 <div class="main_input_box">
@@ -49,10 +60,17 @@
                 </div>
             </div>
         </div>
+        
+        <!-- BẮT ĐẦU: THÔNG TIN SINH VIÊN -->
+        <div class="control-group normal_text" style="padding: 15px 0 10px 0; border-top: none;">
+            <!-- Đổi màu chữ sang xanh cây (#198754), bỏ shadow -->
+            <div style="color: #1A6188; font-size: 15px; font-weight: bold;">
+                Sinh viên thực hiện: NGUYỄN ĐỨC VIỆT - AT190256
+            </div>
+        </div>
+        <!-- KẾT THÚC: THÔNG TIN SINH VIÊN -->
+        
         <div class="form-actions">
-{#            <span class="pull-left"><a href="{% url 'webscanners:signup' %}" class="btn btn-lg btn-primary"#}
-{#                                       type="submit" tabindex="2">Sign Up</a></span>#}
-
             <span class="pull-right"><button class="btn btn-lg btn-primary " type="submit">Sign in</button></span>
         </div>
     </form>
@@ -61,5 +79,4 @@
 <script src="{% static 'js/jquery.min.js' %}"></script>
 <script src="{% static 'js/archery.login.js' %}"></script>
 </body>
-
 </html>

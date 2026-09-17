@@ -136,7 +136,7 @@ hr {
 }
 
 body {
-    background-color: #2E363F;
+    background-color: #F2F2F2 !important;
     padding: 0;
     margin-top: 10%;
 }
@@ -161,10 +161,12 @@ body {
 
 #loginbox form {
     width: 100%;
-    background: #2E363F;
+    background: #F2F2F2 !important; /* Đổi nền thành màu trắng */
     position: relative;
     top: 0;
     left: 0;
+    border-radius: 8px; /* Bo góc cho khung đăng nhập */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05); /* Đổ bóng nhẹ cho khung nổi lên */
 }
 
 #loginbox .form-actions {
@@ -226,7 +228,7 @@ body {
 .form-vertical, .form-actions {
     margin-bottom: 0;
     background: none;
-    border-top: 1px solid #3f4954;
+    border-top: 1px solid #e5e5e5 !important; /* Đổi viền kẻ ngang sang xám nhạt */
 }
 
 #loginbox .normal_text {
@@ -234,8 +236,8 @@ body {
     text-align: center;
     font-size: 14px;
     line-height: 20px;
-    background: #2E363F;
-    color: #fff;
+    background: #F2F2F2 !important; /* Đổi nền thành màu trắng cho đồng bộ */
+    color: #333;
 }
 
 @media (max-width: 800px) {

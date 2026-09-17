@@ -1,30 +1,87 @@
 {% load static %}
-<header class="topbar" data-navbarbg="skin5">
-    <nav class="navbar top-navbar navbar-expand-md navbar-dark">
-        <div class="navbar-header" data-logobg="skin5">
+<!-- Gắn thẳng màu vào thẻ header -->
+<header class="topbar" data-navbarbg="skin5" style="background-color: #7597AA !important; border-bottom: none !important;">
+    <!-- Gắn thẳng màu vào thẻ nav -->
+    <nav class="navbar top-navbar navbar-expand-md navbar-dark" style="background-color: #7597AA !important;">
+        
+        <!-- Gắn thẳng màu vào khu vực chứa Logo -->
+        <div class="navbar-header" data-logobg="skin5" style="background-color: #7597AA !important;">
             <a class="nav-toggler waves-effect waves-light d-block d-md-none" href="javascript:void(0)"><i
                     class="ti-menu ti-close"></i></a>
+            
+            <!-- BẮT ĐẦU: CSS ÉP MÀU SIDEBAR (Phần này đã hoạt động tốt nên giữ nguyên) -->
             <style>
-                            [data-sidebartype="full"] .logo-icon {
-                                                    display: none; }
+                [data-sidebartype="full"] .logo-icon {
+                    display: none; 
+                }
 
+                /* 2. ÉP MÀU XANH NAVY CHO SIDEBAR (Thanh dọc) */
+                .left-sidebar[data-sidebarbg="skin5"], 
+                .left-sidebar[data-sidebarbg="skin5"] ul,
+                .sidebar-nav,
+                .sidebar-nav ul {
+                    background-color: #7597AA !important;
+                }
 
+                /* 3. MÀU CHỮ VÀ ICON CỦA MENU SIDEBAR */
+                .sidebar-nav ul li a,
+                .sidebar-nav ul li a i {
+                    color: #EAF6FA !important; /* Xanh nhạt */
+                    opacity: 1 !important;
+                }
+
+                /* 4. MÀU KHI RÊ CHUỘT & KHI MENU ĐANG ĐƯỢC CHỌN (ACTIVE) */
+                .sidebar-nav ul li a:hover,
+                .sidebar-nav ul li.selected > a,
+                .sidebar-nav ul li.active > a {
+                    background-color: #1B6CA8 !important; /* Xanh lơ dịu mắt */
+                    color: #FFFFFF !important;
+                }
+                
+                .sidebar-nav ul li a:hover i,
+                .sidebar-nav ul li.selected > a i,
+                .sidebar-nav ul li.active > a i {
+                    color: #FFFFFF !important;
+                }
+
+                .sidebar-nav ul li {
+                    /* Đổi thành màu đen mờ 15%, tạo hiệu ứng rãnh chìm tinh tế */
+                    border-top: 1px solid rgba(0, 0, 0, 0.15) !important; 
+                    border-bottom: none !important;
+                }
+
+                /* Áp dụng luôn cho các vạch kẻ ngăn cách nhóm menu (my-2, border-top) */
+                .sidebar-nav ul li.border-top {
+                    border-top: 1px solid rgba(0, 0, 0, 0.15) !important;
+                }  
+                
+                /* Đổi màu menu con (Submenu) cho phân biệt rõ ràng */
+                .sidebar-nav ul.collapse.first-level {
+                    background-color: #0A3654 !important; /* Xanh navy tối hơn */
+                }
+
+                /* 5. NỀN NỘI DUNG CHÍNH (XÁM SÁNG) */
+                .page-wrapper {
+                    background-color: #F4F7F6 !important;
+                }
             </style>
+            <!-- KẾT THÚC: CSS ÉP MÀU GIAO DIỆN -->
+
             <a class="navbar-brand" href="{% url 'dashboard:dashboard' %}">
                 <b class="logo-icon p-l-6">
                     <img src="{% static 'logo.png' %}" class="light-logo" style="height: 3.1rem;"/>
-
                 </b>
                 <span class="logo-text">
-                             <img src="{% static 'archery.png' %}" class="light-logo" style="height: 3.6rem;"/>
-
-                        </span>
+                    <img src="{% static 'archery.png' %}" class="light-logo" style="height: 3.6rem;"/>
+                </span>
             </a>
             <a class="topbartoggler d-block d-md-none waves-effect waves-light" href="javascript:void(0)"
                data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                aria-expanded="false" aria-label="Toggle navigation"><i class="ti-more"></i></a>
         </div>
-        <div class="navbar-collapse collapse" id="navbarSupportedContent" data-navbarbg="skin5">
+        
+        <!-- Gắn thẳng màu vào khu vực chứa các menu ngang và User -->
+        <div class="navbar-collapse collapse" id="navbarSupportedContent" data-navbarbg="skin5" style="background-color: #7597AA !important;">
             <ul class="navbar-nav float-left mr-auto">
                 <li class="nav-item d-none d-md-block"><a class="nav-link sidebartoggler waves-effect waves-light"
                                                           href="javascript:void(0)" data-sidebartype="mini-sidebar"><i
