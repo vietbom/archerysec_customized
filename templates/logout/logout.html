@@ -3,32 +3,319 @@
 <html lang="en">
 
 <head>
-    <title>Archery</title>
-    <link rel="icon" href="/static/logo.png" type="image/x-icon">
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'css/bootstrap-responsive.min.css' %}"/>
-    <link rel="stylesheet" href="{% static 'css/archery-login.css' %}"/>
-    <link href="{% static 'font-awesome/css/font-awesome.css' %}" rel="stylesheet"/>
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700,800' rel='stylesheet' type='text/css'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>Logout - ArcherySec</title>
+
+    <link rel="icon" href="{% static 'logo.png' %}" type="image/x-icon">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-family:
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Arial,
+                sans-serif;
+
+            background:
+                radial-gradient(
+                    circle at 20% 20%,
+                    rgba(59, 130, 246, 0.15),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    circle at 80% 80%,
+                    rgba(139, 92, 246, 0.12),
+                    transparent 35%
+                ),
+                #0f172a;
+
+            color: #e5e7eb;
+            overflow: hidden;
+        }
+
+        /* Background decoration */
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+
+            background-image:
+                linear-gradient(
+                    rgba(255,255,255,0.025) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(255,255,255,0.025) 1px,
+                    transparent 1px
+                );
+
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        /* Main container */
+
+        .logout-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 460px;
+            padding: 24px;
+        }
+
+        /* Card */
+
+        .logout-card {
+            position: relative;
+
+            padding: 48px 40px;
+
+            background: rgba(15, 23, 42, 0.82);
+
+            border: 1px solid rgba(148, 163, 184, 0.18);
+
+            border-radius: 20px;
+
+            box-shadow:
+                0 25px 60px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.04);
+
+            backdrop-filter: blur(16px);
+
+            text-align: center;
+
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* Logo */
+
+        .logo {
+            width: 64px;
+            height: 64px;
+
+            margin: 0 auto 24px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 16px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #7c3aed
+                );
+
+            box-shadow:
+                0 10px 30px rgba(37, 99, 235, 0.3);
+        }
+
+        .logo img {
+            width: 38px;
+            height: 38px;
+            object-fit: contain;
+        }
+
+        /* Icon */
+
+        .logout-icon {
+            width: 72px;
+            height: 72px;
+
+            margin: 0 auto 24px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: 50%;
+
+            background: rgba(34, 197, 94, 0.10);
+
+            border: 1px solid rgba(34, 197, 94, 0.25);
+
+            color: #4ade80;
+
+            font-size: 32px;
+        }
+
+        .logout-icon::before {
+            content: "✓";
+            font-weight: 600;
+        }
+
+        /* Title */
+
+        .logout-card h1 {
+            margin-bottom: 12px;
+
+            font-size: 28px;
+            font-weight: 700;
+
+            letter-spacing: -0.5px;
+
+            color: #f8fafc;
+        }
+
+        /* Description */
+
+        .logout-message {
+            margin-bottom: 32px;
+
+            color: #94a3b8;
+
+            font-size: 15px;
+            line-height: 1.7;
+        }
+
+        /* Button */
+
+        .login-button {
+            display: inline-flex;
+
+            align-items: center;
+            justify-content: center;
+
+            width: 100%;
+
+            padding: 13px 20px;
+
+            border-radius: 10px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2563eb,
+                    #4f46e5
+                );
+
+            color: #ffffff;
+
+            font-size: 15px;
+            font-weight: 600;
+
+            text-decoration: none;
+
+            transition:
+                transform 0.2s ease,
+                box-shadow 0.2s ease,
+                opacity 0.2s ease;
+
+            box-shadow:
+                0 8px 20px rgba(37, 99, 235, 0.25);
+        }
+
+        .login-button:hover {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 12px 28px rgba(37, 99, 235, 0.35);
+
+            opacity: 0.95;
+        }
+
+        .login-button:active {
+            transform: translateY(0);
+        }
+
+        /* Footer */
+
+        .footer {
+            margin-top: 28px;
+
+            font-size: 12px;
+
+            color: #64748b;
+        }
+
+        /* Animation */
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Mobile */
+
+        @media (max-width: 480px) {
+
+            .logout-wrapper {
+                padding: 16px;
+            }
+
+            .logout-card {
+                padding: 36px 24px;
+            }
+
+            .logout-card h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
 </head>
 
-<body class="bg-dark" id="page-top">
-<div id="loginbox">
-    <div class="control-group">
-        <div class="controls">
-            <div class="main_input_box">
-                <div>
-                    <p2>Thanks for using portal. <a href="{% url 'login' %}">Login Again</a></p2>
-                </div>
+<body>
+
+    <div class="logout-wrapper">
+
+        <div class="logout-card">
+
+            <div class="logo">
+                <img
+                    src="{% static 'logo.png' %}"
+                    alt="ArcherySec"
+                >
             </div>
+
+            <div class="logout-icon"></div>
+
+            <h1>You've been logged out</h1>
+
+            <p class="logout-message">
+                Thanks for using ArcherySec Security Portal.
+                Your session has been safely closed.
+            </p>
+
+            <a
+                href="{% url 'login' %}"
+                class="login-button"
+            >
+                Login Again
+            </a>
+
+            <div class="footer">
+                ArcherySec · Security Monitoring Platform
+            </div>
+
         </div>
+
     </div>
-</div>
-<script src="{% static 'js/jquery.min.js' %}"></script>
-<script src="{% static 'js/archery.login.js' %}"></script>
+
 </body>
 
 </html>
