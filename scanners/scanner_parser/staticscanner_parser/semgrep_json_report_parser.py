@@ -132,6 +132,7 @@ def semgrep_report_json(data, project_id, scan_id, request):
         existing_record = StaticScanResultsDb.objects.filter(
             project_id=project_id,
             dup_hash=duplicate_hash,
+            scanner="Semgrep",
             organization=organization,
         ).first()
 
@@ -166,7 +167,10 @@ def semgrep_report_json(data, project_id, scan_id, request):
             continue
 
         match_dup = StaticScanResultsDb.objects.filter(
-            dup_hash=duplicate_hash, organization=organization
+            project_id=project_id,
+            dup_hash=duplicate_hash,
+            scanner="Semgrep",
+            organization=organization,
         ).values("dup_hash")
         lenth_match = len(match_dup)
 

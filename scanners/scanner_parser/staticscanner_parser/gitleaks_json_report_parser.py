@@ -134,6 +134,7 @@ def gitleaks_report_json(data, project_id, scan_id, request):
         existing_record = StaticScanResultsDb.objects.filter(
             project_id=project_id,
             dup_hash=duplicate_hash,
+            scanner="gitleaks",
             organization=organization,
         ).first()
 
@@ -156,7 +157,10 @@ def gitleaks_report_json(data, project_id, scan_id, request):
             continue
 
         match_dup = StaticScanResultsDb.objects.filter(
-            dup_hash=duplicate_hash, organization=organization
+            project_id=project_id,
+            dup_hash=duplicate_hash,
+            scanner="gitleaks",
+            organization=organization,
         ).values("dup_hash")
         lenth_match = len(match_dup)
 

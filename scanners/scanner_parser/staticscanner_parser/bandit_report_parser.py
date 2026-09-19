@@ -20,6 +20,7 @@ from datetime import datetime
 
 from archeryapi.models import OrgAPIKey
 from dashboard.views import trend_update
+from scanners.vuln_checker import build_fingerprint, reconcile_scan_results
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.email_notify import email_sch_notify
 
@@ -147,8 +148,30 @@ def bandit_report_json(data, project_id, scan_id, request):
                     vul_col = "info"
                     issue_severity = "Low"
 
-                dup_data = test_name + filename + issue_severity
-                duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
+                duplicate_hash = build_fingerprint(
+                    {
+                        "scanner": "Bandit",
+                        "test_name": test_name,
+                        "filename": filename,
+                        "severity": issue_severity,
+                    }
+                )
+
+                existing_record = StaticScanResultsDb.objects.filter(
+                    project_id=project_id,
+                    dup_hash=duplicate_hash,
+                    scanner="Bandit",
+                    organization=organization,
+                ).first()
+
+                if existing_record is not None:
+                    existing_record.scan_id = scan_id
+                    existing_record.date_time = date_time
+                    existing_record.vuln_status = "Open"
+                    existing_record.is_active = True
+                    existing_record.false_positive = "No"
+                    existing_record.save()
+                    continue
 
                 match_dup = (
                     StaticScanResultsDb.objects.filter(
@@ -223,6 +246,10 @@ def bandit_report_json(data, project_id, scan_id, request):
                         organization=organization,
                     )
                     save_all.save()
+
+        reconcile_scan_results(
+            StaticScanResultsDb, project_id, scan_id, organization, "Bandit"
+        )
 
         all_bandit_data = StaticScanResultsDb.objects.filter(
             scan_id=scan_id, false_positive="No", organization=organization

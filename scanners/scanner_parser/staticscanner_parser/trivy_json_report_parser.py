@@ -155,6 +155,7 @@ def trivy_report_json(data, project_id, scan_id, request):
                 existing_record = StaticScanResultsDb.objects.filter(
                     project_id=project_id,
                     dup_hash=duplicate_hash,
+                    scanner="Trivy",
                     organization=organization,
                 ).first()
 
@@ -197,7 +198,10 @@ def trivy_report_json(data, project_id, scan_id, request):
                     continue
 
                 match_dup = StaticScanResultsDb.objects.filter(
-                    dup_hash=duplicate_hash, organization=organization
+                    project_id=project_id,
+                    dup_hash=duplicate_hash,
+                    scanner="Trivy",
+                    organization=organization,
                 ).values("dup_hash")
                 lenth_match = len(match_dup)
 
@@ -379,8 +383,28 @@ def trivy_report_json(data, project_id, scan_id, request):
                     }
                 )
 
+                existing_record = StaticScanResultsDb.objects.filter(
+                    project_id=project_id,
+                    dup_hash=duplicate_hash,
+                    scanner="Trivy",
+                    organization=organization,
+                ).first()
+
+                if existing_record is not None:
+                    existing_record.scan_id = scan_id
+                    existing_record.date_time = date_time
+                    existing_record.vuln_status = "Open"
+                    existing_record.is_active = True
+                    existing_record.vuln_duplicate = "No"
+                    existing_record.false_positive = "No"
+                    existing_record.save()
+                    continue
+
                 match_dup = StaticScanResultsDb.objects.filter(
-                    dup_hash=duplicate_hash, organization=organization
+                    project_id=project_id,
+                    dup_hash=duplicate_hash,
+                    scanner="Trivy",
+                    organization=organization,
                 ).values("dup_hash")
                 lenth_match = len(match_dup)
 
@@ -521,6 +545,23 @@ def trivy_report_json(data, project_id, scan_id, request):
                             "end_line": endline,
                         }
                     )
+
+                    existing_record = StaticScanResultsDb.objects.filter(
+                        project_id=project_id,
+                        dup_hash=duplicate_hash,
+                        scanner="Trivy",
+                        organization=organization,
+                    ).first()
+
+                    if existing_record is not None:
+                        existing_record.scan_id = scan_id
+                        existing_record.date_time = date_time
+                        existing_record.vuln_status = "Open"
+                        existing_record.is_active = True
+                        existing_record.vuln_duplicate = "No"
+                        existing_record.false_positive = "No"
+                        existing_record.save()
+                        continue
 
                     match_dup = StaticScanResultsDb.objects.filter(
                         dup_hash=duplicate_hash, organization=organization

@@ -139,7 +139,10 @@ def xml_parser(root, project_id, scan_id, request):
             )
             match_dup = (
                 WebScanResultsDb.objects.filter(
-                    dup_hash=duplicate_hash, organization=organization
+                    project_id=project_id,
+                    dup_hash=duplicate_hash,
+                    scanner="Zap",
+                    organization=organization,
                 )
                 .values("dup_hash")
                 .distinct()
@@ -149,6 +152,7 @@ def xml_parser(root, project_id, scan_id, request):
             existing_record = WebScanResultsDb.objects.filter(
                 project_id=project_id,
                 dup_hash=duplicate_hash,
+                scanner="Zap",
                 organization=organization,
             ).first()
 

@@ -21,6 +21,7 @@ from datetime import datetime
 
 from archeryapi.models import OrgAPIKey
 from dashboard.views import trend_update
+from scanners.vuln_checker import build_fingerprint, reconcile_scan_results
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.email_notify import email_sch_notify
 
@@ -85,9 +86,30 @@ def grype_report_json(data, project_id, scan_id, request):
 
         vul_id = uuid.uuid4()
 
-        dup_data = str(title) + str(severity) + str(package)
+        duplicate_hash = build_fingerprint(
+            {
+                "scanner": "grype_scan",
+                "title": title,
+                "severity": severity,
+                "package": package,
+            }
+        )
 
-        duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
+        existing_record = StaticScanResultsDb.objects.filter(
+            project_id=project_id,
+            dup_hash=duplicate_hash,
+            scanner="grype_scan",
+            organization=organization,
+        ).first()
+
+        if existing_record is not None:
+            existing_record.scan_id = scan_id
+            existing_record.date_time = date_time
+            existing_record.vuln_status = "Open"
+            existing_record.is_active = True
+            existing_record.false_positive = "No"
+            existing_record.save()
+            continue
 
         match_dup = StaticScanResultsDb.objects.filter(
             dup_hash=duplicate_hash, organization=organization
@@ -168,6 +190,10 @@ def grype_report_json(data, project_id, scan_id, request):
                 organization=organization,
             )
             save_all.save()
+
+    reconcile_scan_results(
+        StaticScanResultsDb, project_id, scan_id, organization, "grype_scan"
+    )
 
     all_findbugs_data = StaticScanResultsDb.objects.filter(
         scan_id=scan_id, false_positive="No", organization=organization
