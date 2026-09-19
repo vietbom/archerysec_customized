@@ -68,6 +68,38 @@ class StaticScanTest(TestCase):
         )
 
     # Test user profile page
+    def test_fingerprint_is_stable_across_equivalent_payloads(self):
+        from scanners.vuln_checker import build_fingerprint
+
+        payload_a = {
+            "scanner": "Trivy",
+            "type": "container_image",
+            "class": "lang-py",
+            "target": "python:3.11",
+            "vulnerability_id": "CVE-2024-1234",
+            "package": "requests",
+            "severity": "High",
+            "installed_version": "2.31.0",
+            "fixed_version": "2.32.0",
+        }
+        payload_b = {
+            "severity": "High",
+            "fixed_version": "2.32.0",
+            "target": "python:3.11",
+            "package": "requests",
+            "installed_version": "2.31.0",
+            "class": "lang-py",
+            "vulnerability_id": "CVE-2024-1234",
+            "scanner": "Trivy",
+            "type": "container_image",
+        }
+
+        self.assertEqual(build_fingerprint(payload_a), build_fingerprint(payload_b))
+        self.assertNotEqual(
+            build_fingerprint(payload_a),
+            build_fingerprint({**payload_a, "severity": "Critical"}),
+        )
+
     def test_static_scan_list(self):
         client = Client()
 

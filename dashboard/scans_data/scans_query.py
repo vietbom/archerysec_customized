@@ -217,16 +217,30 @@ def all_pentest_net(project_id, query):
     return all_pentest_net
 
 
+def _static_finding_count(project_id, query):
+    result_qs = StaticScanResultsDb.objects.filter(
+        project__uu_id=project_id,
+    ).exclude(false_positive="Yes").exclude(vuln_status="Duplicate")
+
+    if query == "total":
+        return result_qs.count()
+    if query == "critical":
+        return result_qs.filter(severity="Critical").count()
+    if query == "high":
+        return result_qs.filter(severity="High").count()
+    if query == "medium":
+        return result_qs.filter(severity="Medium").count()
+    if query == "low":
+        return result_qs.filter(severity="Low").count()
+    return 0
+
+
 def all_vuln(project_id, query):
     all_vuln = 0
 
     if query == "total":
         try:
-            all_sast_scan = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("total_vul")
-                )["total_vul__sum"]
-            )
+            all_sast_scan = int(_static_finding_count(project_id, query=query))
         except Exception as e:
             #
             all_sast_scan = 0
@@ -270,11 +284,7 @@ def all_vuln(project_id, query):
         )
     elif query == "critical":
         try:
-            all_sast_scan = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("critical_vul")
-                )["critical_vul__sum"]
-            )
+            all_sast_scan = int(_static_finding_count(project_id, query=query))
         except Exception as e:
             #
             all_sast_scan = 0
@@ -316,11 +326,7 @@ def all_vuln(project_id, query):
         )
     elif query == "high":
         try:
-            all_sast_scan = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("high_vul")
-                )["high_vul__sum"]
-            )
+            all_sast_scan = int(_static_finding_count(project_id, query=query))
         except Exception as e:
             #
             all_sast_scan = 0
@@ -362,11 +368,7 @@ def all_vuln(project_id, query):
         )
     elif query == "medium":
         try:
-            all_sast_scan = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("medium_vul")
-                )["medium_vul__sum"]
-            )
+            all_sast_scan = int(_static_finding_count(project_id, query=query))
         except Exception as e:
             #
             all_sast_scan = 0
@@ -410,11 +412,7 @@ def all_vuln(project_id, query):
         )
     elif query == "low":
         try:
-            all_sast_scan = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("low_vul")
-                )["low_vul__sum"]
-            )
+            all_sast_scan = int(_static_finding_count(project_id, query=query))
         except Exception as e:
             #
             all_sast_scan = 0
@@ -601,57 +599,7 @@ def all_compliance(project_id, query):
 
 
 def all_static(project_id, query):
-    all_static = 0
-
-    if query == "total":
-        try:
-            all_static = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("total_vul")
-                )["total_vul__sum"]
-            )
-        except Exception as e:
-            all_static = 0
-
-    elif query == "critical":
-        try:
-            all_static = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("critical_vul")
-                )["critical_vul__sum"]
-            )
-        except Exception as e:
-            all_static = 0
-    elif query == "high":
-        try:
-            all_static = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("high_vul")
-                )["high_vul__sum"]
-            )
-        except Exception as e:
-            all_static = 0
-    elif query == "medium":
-        try:
-            all_static = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("medium_vul")
-                )["medium_vul__sum"]
-            )
-        except Exception as e:
-            all_static = 0
-
-    elif query == "low":
-        try:
-            all_static = int(
-                StaticScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("low_vul")
-                )["low_vul__sum"]
-            )
-        except Exception as e:
-            all_static = 0
-
-    return all_static
+    return _static_finding_count(project_id, query=query)
 
 
 def all_cloud(project_id, query):

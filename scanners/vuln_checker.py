@@ -15,12 +15,31 @@
 # This file is part of ArcherySec Project.
 
 import hashlib
-import uuid
+import json
 
-from webscanners.models import WebScanResultsDb, WebScansDb
+
+def _normalize_fingerprint_value(value):
+    if isinstance(value, dict):
+        return {
+            str(key): _normalize_fingerprint_value(val)
+            for key, val in sorted(value.items(), key=lambda item: str(item[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        return [_normalize_fingerprint_value(item) for item in value]
+    if isinstance(value, set):
+        return sorted(_normalize_fingerprint_value(item) for item in value)
+    if value is None:
+        return None
+    if isinstance(value, (str, int, float, bool)):
+        return value
+    return str(value)
+
+
+def build_fingerprint(payload):
+    normalized = _normalize_fingerprint_value(payload)
+    canonical = json.dumps(normalized, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def check_false_positive(title, severity, scan_url):
-    dup_data = title + severity + scan_url
-    duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
-    return duplicate_hash
+    return build_fingerprint({"title": title, "severity": severity, "scan_url": scan_url})

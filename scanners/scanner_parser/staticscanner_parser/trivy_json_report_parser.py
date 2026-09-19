@@ -21,6 +21,7 @@ from datetime import datetime
 
 from archeryapi.models import OrgAPIKey
 from dashboard.views import trend_update
+from scanners.vuln_checker import build_fingerprint
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.email_notify import email_sch_notify
 
@@ -135,16 +136,64 @@ def trivy_report_json(data, project_id, scan_id, request):
 
                 vul_id = uuid.uuid4()
 
-                dup_data = (
-                    str(VulnerabilityID)
-                    + str(Severity)
-                    + str(PkgName)
-                    + str(t_target)
-                    + str(t_type)
-                    + str(t_class)
+                duplicate_hash = build_fingerprint(
+                    {
+                        "scanner": "Trivy",
+                        "artifact_type": data.get("ArtifactType"),
+                        "vulnerability_id": VulnerabilityID,
+                        "package": PkgName,
+                        "installed_version": InstalledVersion,
+                        "fixed_version": FixedVersion,
+                        "title": Title,
+                        "severity": Severity,
+                        "target": t_target,
+                        "type": t_type,
+                        "class": t_class,
+                    }
                 )
 
-                duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
+                existing_record = StaticScanResultsDb.objects.filter(
+                    project_id=project_id,
+                    dup_hash=duplicate_hash,
+                    organization=organization,
+                ).first()
+
+                if existing_record is not None:
+                    existing_record.scan_id = scan_id
+                    existing_record.date_time = date_time
+                    existing_record.project_id = project_id
+                    existing_record.fileName = PkgName
+                    existing_record.title = VulnerabilityID
+                    existing_record.description = (
+                        str(Description)
+                        + str(Title)
+                        + "\n\n"
+                        + str(t_target)
+                        + str(t_type)
+                        + str(t_class)
+                        + "\n\n"
+                        + str(VulnerabilityID)
+                        + "\n\n"
+                        + str(PkgName)
+                        + "\n\n"
+                        + str(InstalledVersion)
+                        + "\n\n"
+                        + str(FixedVersion)
+                    )
+                    existing_record.severity = Severity
+                    existing_record.solution = (
+                        PkgName + " can be fixed by upgrading version :" + FixedVersion
+                    )
+                    existing_record.references = References
+                    existing_record.severity_color = vul_col
+                    existing_record.vuln_status = "Open"
+                    existing_record.dup_hash = duplicate_hash
+                    existing_record.vuln_duplicate = "No"
+                    existing_record.false_positive = "No"
+                    existing_record.scanner = "Trivy"
+                    existing_record.organization = organization
+                    existing_record.save()
+                    continue
 
                 match_dup = StaticScanResultsDb.objects.filter(
                     dup_hash=duplicate_hash, organization=organization
@@ -314,9 +363,20 @@ def trivy_report_json(data, project_id, scan_id, request):
 
                 vul_id = uuid.uuid4()
 
-                dup_data = str(title) + str(Severity) + str(match) + str(target)
-
-                duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
+                duplicate_hash = build_fingerprint(
+                    {
+                        "scanner": "Trivy",
+                        "artifact_type": data.get("ArtifactType"),
+                        "type": "secret",
+                        "title": title,
+                        "severity": Severity,
+                        "target": target,
+                        "match": match,
+                        "category": category,
+                        "start_line": startline,
+                        "end_line": endline,
+                    }
+                )
 
                 match_dup = StaticScanResultsDb.objects.filter(
                     dup_hash=duplicate_hash, organization=organization
@@ -443,11 +503,23 @@ def trivy_report_json(data, project_id, scan_id, request):
 
                     vul_id = uuid.uuid4()
 
-                    dup_data = str(title) + str(Severity) + str(code) + str(target)
-
-                    duplicate_hash = hashlib.sha256(
-                        dup_data.encode("utf-8")
-                    ).hexdigest()
+                    duplicate_hash = build_fingerprint(
+                        {
+                            "scanner": "Trivy",
+                            "artifact_type": data.get("ArtifactType"),
+                            "type": "config",
+                            "title": title,
+                            "severity": Severity,
+                            "target": target,
+                            "message": message,
+                            "resolution": resolution,
+                            "resource": resource,
+                            "provider": provider,
+                            "code": code,
+                            "start_line": startline,
+                            "end_line": endline,
+                        }
+                    )
 
                     match_dup = StaticScanResultsDb.objects.filter(
                         dup_hash=duplicate_hash, organization=organization

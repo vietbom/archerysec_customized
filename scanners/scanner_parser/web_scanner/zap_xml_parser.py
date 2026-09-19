@@ -22,7 +22,7 @@ import uuid
 from datetime import datetime
 
 from dashboard.views import trend_update
-from scanners.vuln_checker import check_false_positive
+from scanners.vuln_checker import build_fingerprint, check_false_positive
 from utility.email_notify import email_sch_notify
 from webscanners.models import WebScanResultsDb, WebScansDb
 from archeryapi.models import OrgAPIKey
@@ -121,8 +121,17 @@ def xml_parser(root, project_id, scan_id, request):
         if title == "None":
             print(title)
         else:
-            duplicate_hash = check_false_positive(
-                title=title, severity=risk, scan_url=scan_url
+            duplicate_hash = build_fingerprint(
+                {
+                    "scanner": "Zap",
+                    "title": title,
+                    "severity": risk,
+                    "scan_url": scan_url,
+                    "alert": alert,
+                    "instance": inst,
+                    "description": desc,
+                    "reference": reference,
+                }
             )
             match_dup = (
                 WebScanResultsDb.objects.filter(
@@ -132,6 +141,32 @@ def xml_parser(root, project_id, scan_id, request):
                 .distinct()
             )
             lenth_match = len(match_dup)
+
+            existing_record = WebScanResultsDb.objects.filter(
+                project_id=project_id,
+                dup_hash=duplicate_hash,
+                organization=organization,
+            ).first()
+
+            if existing_record is not None:
+                existing_record.scan_id = scan_id
+                existing_record.date_time = date_time
+                existing_record.url = scan_url
+                existing_record.title = title
+                existing_record.solution = solution
+                existing_record.instance = inst
+                existing_record.reference = reference
+                existing_record.description = desc
+                existing_record.severity = risk
+                existing_record.severity_color = vul_col
+                existing_record.false_positive = "No"
+                existing_record.vuln_status = "Open"
+                existing_record.dup_hash = duplicate_hash
+                existing_record.vuln_duplicate = "No"
+                existing_record.scanner = "Zap"
+                existing_record.organization = organization
+                existing_record.save()
+                continue
 
             if lenth_match == 0:
                 duplicate_vuln = "No"

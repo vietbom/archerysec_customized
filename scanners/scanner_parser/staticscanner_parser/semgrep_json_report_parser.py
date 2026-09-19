@@ -21,6 +21,7 @@ from datetime import datetime
 
 from archeryapi.models import OrgAPIKey
 from dashboard.views import trend_update
+from scanners.vuln_checker import build_fingerprint
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.email_notify import email_sch_notify
 
@@ -115,9 +116,53 @@ def semgrep_report_json(data, project_id, scan_id, request):
 
         vul_id = uuid.uuid4()
 
-        dup_data = str(check_id) + str(severity) + str(path)
+        duplicate_hash = build_fingerprint(
+            {
+                "scanner": "Semgrep",
+                "check_id": check_id,
+                "severity": severity,
+                "path": path,
+                "message": message,
+                "metadata": metadata,
+                "end": end,
+                "lines": lines,
+            }
+        )
 
-        duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
+        existing_record = StaticScanResultsDb.objects.filter(
+            project_id=project_id,
+            dup_hash=duplicate_hash,
+            organization=organization,
+        ).first()
+
+        if existing_record is not None:
+            existing_record.scan_id = scan_id
+            existing_record.date_time = date_time
+            existing_record.title = check_id
+            existing_record.severity_color = vul_col
+            existing_record.vuln_status = "Open"
+            existing_record.dup_hash = duplicate_hash
+            existing_record.vuln_duplicate = "No"
+            existing_record.false_positive = "No"
+            existing_record.fileName = path
+            existing_record.severity = severity
+            existing_record.description = (
+                str(message)
+                + "\n\n"
+                + str(check_id)
+                + "\n\n"
+                + str(end)
+                + "\n\n"
+                + str(metavars)
+                + "\n\n"
+                + str(metadata)
+                + "\n\n"
+                + str(lines)
+            )
+            existing_record.scanner = "Semgrep"
+            existing_record.organization = organization
+            existing_record.save()
+            continue
 
         match_dup = StaticScanResultsDb.objects.filter(
             dup_hash=duplicate_hash, organization=organization

@@ -21,6 +21,7 @@ from datetime import datetime
 
 from archeryapi.models import OrgAPIKey
 from dashboard.views import trend_update
+from scanners.vuln_checker import build_fingerprint
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.email_notify import email_sch_notify
 
@@ -117,9 +118,41 @@ def gitleaks_report_json(data, project_id, scan_id, request):
 
         vul_id = uuid.uuid4()
 
-        dup_data = str(name) + str(severity) + str(file)
+        duplicate_hash = build_fingerprint(
+            {
+                "scanner": "gitleaks",
+                "title": name,
+                "severity": severity,
+                "file": file,
+                "offender": issues_data.get("offender"),
+                "rule": issues_data.get("rule"),
+                "repo": issues_data.get("repo"),
+                "commit": issues_data.get("commit"),
+            }
+        )
 
-        duplicate_hash = hashlib.sha256(dup_data.encode("utf-8")).hexdigest()
+        existing_record = StaticScanResultsDb.objects.filter(
+            project_id=project_id,
+            dup_hash=duplicate_hash,
+            organization=organization,
+        ).first()
+
+        if existing_record is not None:
+            existing_record.scan_id = scan_id
+            existing_record.date_time = date_time
+            existing_record.title = name
+            existing_record.description = description
+            existing_record.fileName = file
+            existing_record.severity = severity
+            existing_record.severity_color = vul_col
+            existing_record.vuln_status = "Open"
+            existing_record.dup_hash = duplicate_hash
+            existing_record.vuln_duplicate = "No"
+            existing_record.false_positive = "No"
+            existing_record.scanner = "gitleaks"
+            existing_record.organization = organization
+            existing_record.save()
+            continue
 
         match_dup = StaticScanResultsDb.objects.filter(
             dup_hash=duplicate_hash, organization=organization
