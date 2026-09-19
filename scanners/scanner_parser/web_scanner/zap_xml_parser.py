@@ -22,7 +22,11 @@ import uuid
 from datetime import datetime
 
 from dashboard.views import trend_update
-from scanners.vuln_checker import build_fingerprint, check_false_positive
+from scanners.vuln_checker import (
+    build_fingerprint,
+    check_false_positive,
+    reconcile_scan_results,
+)
 from utility.email_notify import email_sch_notify
 from webscanners.models import WebScanResultsDb, WebScansDb
 from archeryapi.models import OrgAPIKey
@@ -161,6 +165,7 @@ def xml_parser(root, project_id, scan_id, request):
                 existing_record.severity_color = vul_col
                 existing_record.false_positive = "No"
                 existing_record.vuln_status = "Open"
+                existing_record.is_active = True
                 existing_record.dup_hash = duplicate_hash
                 existing_record.vuln_duplicate = "No"
                 existing_record.scanner = "Zap"
@@ -210,6 +215,8 @@ def xml_parser(root, project_id, scan_id, request):
                 false_positive = "Yes"
             else:
                 false_positive = "No"
+
+    reconcile_scan_results(WebScanResultsDb, project_id, scan_id, organization, "Zap")
 
     zap_all_vul = WebScanResultsDb.objects.filter(
         scan_id=scan_id, false_positive="No", organization=organization

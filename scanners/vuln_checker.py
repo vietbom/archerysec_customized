@@ -41,5 +41,32 @@ def build_fingerprint(payload):
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def reconcile_scan_results(model, project_id, scan_id, organization, scanner):
+    current_hashes = set(
+        model.objects.filter(
+            project_id=project_id,
+            scan_id=scan_id,
+            scanner=scanner,
+            organization=organization,
+        )
+        .exclude(dup_hash__isnull=True)
+        .values_list("dup_hash", flat=True)
+    )
+
+    stale_results = model.objects.filter(
+        project_id=project_id,
+        scanner=scanner,
+        organization=organization,
+        vuln_status="Open",
+        false_positive="No",
+        vuln_duplicate="No",
+    ).exclude(scan_id=scan_id)
+
+    if current_hashes:
+        stale_results = stale_results.exclude(dup_hash__in=current_hashes)
+
+    stale_results.update(vuln_status="Closed", is_active=False)
+
+
 def check_false_positive(title, severity, scan_url):
     return build_fingerprint({"title": title, "severity": severity, "scan_url": scan_url})

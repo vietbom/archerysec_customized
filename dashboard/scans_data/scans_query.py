@@ -220,6 +220,7 @@ def all_pentest_net(project_id, query):
 def _static_finding_count(project_id, query):
     result_qs = StaticScanResultsDb.objects.filter(
         project__uu_id=project_id,
+        vuln_status="Open",
     ).exclude(false_positive="Yes").exclude(vuln_status="Duplicate")
 
     if query == "total":

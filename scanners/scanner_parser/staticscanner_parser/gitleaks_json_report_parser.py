@@ -21,7 +21,7 @@ from datetime import datetime
 
 from archeryapi.models import OrgAPIKey
 from dashboard.views import trend_update
-from scanners.vuln_checker import build_fingerprint
+from scanners.vuln_checker import build_fingerprint, reconcile_scan_results
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.email_notify import email_sch_notify
 
@@ -146,6 +146,7 @@ def gitleaks_report_json(data, project_id, scan_id, request):
             existing_record.severity = severity
             existing_record.severity_color = vul_col
             existing_record.vuln_status = "Open"
+            existing_record.is_active = True
             existing_record.dup_hash = duplicate_hash
             existing_record.vuln_duplicate = "No"
             existing_record.false_positive = "No"
@@ -213,6 +214,10 @@ def gitleaks_report_json(data, project_id, scan_id, request):
                 organization=organization,
             )
             save_all.save()
+
+    reconcile_scan_results(
+        StaticScanResultsDb, project_id, scan_id, organization, "gitleaks"
+    )
 
     all_findbugs_data = StaticScanResultsDb.objects.filter(
         scan_id=scan_id, false_positive="No", organization=organization
