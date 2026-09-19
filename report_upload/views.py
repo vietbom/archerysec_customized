@@ -23,6 +23,7 @@ from datetime import datetime
 
 import defusedxml.ElementTree as ET
 from django.contrib import messages
+from django.db import transaction
 from django.shortcuts import HttpResponseRedirect, render
 from django.urls import reverse
 from lxml import etree
@@ -62,6 +63,7 @@ class Upload(APIView):
             request, "report_upload/upload.html", {"all_project": all_project}
         )
 
+    @transaction.atomic
     def post(self, request):
         all_project = ProjectDb.objects.filter(organization=request.user.organization)
         project_uu_id = request.POST.get("project_id")
@@ -250,6 +252,7 @@ class Upload(APIView):
 
         except Exception as e:
             print(e)
+            transaction.set_rollback(True)
             messages.error(request, "File Not Supported")
             return render(
                 request, "report_upload/upload.html", {"all_project": all_project}

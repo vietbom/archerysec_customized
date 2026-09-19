@@ -56,7 +56,7 @@ def gitleaks_report_json(data, project_id, scan_id, request):
 
     vul_col = ""
 
-    for issues_data in data:
+    for issues_data in data or []:
         try:
             name = issues_data["line"]
         except Exception:

@@ -63,10 +63,10 @@ def trivy_report_json(data, project_id, scan_id, request):
     t_type = ""
     t_class = ""
     vuln = ""
-    if data["ArtifactType"] == "container_image":
-        for vuln_data in data["Results"]:
+    if data.get("ArtifactType") == "container_image":
+        for vuln_data in data.get("Results", []):
             try:
-                vuln = vuln_data["Vulnerabilities"]
+                vuln = vuln_data.get("Vulnerabilities", [])
                 t_target = vuln_data["Target"]
                 t_class = vuln_data["Class"]
                 t_type = vuln_data["Type"]
@@ -319,7 +319,7 @@ def trivy_report_json(data, project_id, scan_id, request):
                 scanner="Trivy",
                 organization=organization,
             )
-    elif data["ArtifactType"] == "filesystem":
+    elif data.get("ArtifactType") == "filesystem":
         description = "na"
         message = "na"
         startline = "na"
@@ -332,7 +332,7 @@ def trivy_report_json(data, project_id, scan_id, request):
         code = "na"
         title = "na"
         mis_data = ""
-        for mis in data["Results"]:
+        for mis in data.get("Results", []):
             target = mis["Target"]
             try:
                 mis_data = mis["Misconfigurations"]

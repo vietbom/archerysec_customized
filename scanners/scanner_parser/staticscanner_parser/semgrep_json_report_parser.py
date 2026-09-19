@@ -47,7 +47,7 @@ def semgrep_report_json(data, project_id, scan_id, request):
     date_time = datetime.now()
     vul_col = ""
 
-    vuln = data["results"]
+    vuln = data.get("results", [])
 
     api_key = request.META.get("HTTP_X_API_KEY")
     key_object = OrgAPIKey.objects.filter(api_key=api_key).first()
