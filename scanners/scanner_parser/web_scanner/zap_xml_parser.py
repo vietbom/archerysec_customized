@@ -65,9 +65,13 @@ def xml_parser(root, project_id, scan_id, request):
     date_time = datetime.now()
     global vul_col, risk, reference, url, solution, instance, alert, desc, riskcode, vuln_id, false_positive, duplicate_hash, duplicate_vuln, scan_url, title
 
-    for child in root:
-        d = child.attrib
-        scan_url = d["name"]
+    site = next(
+        (element for element in root.iter("site") if element.get("name")),
+        None,
+    )
+    if site is None:
+        raise ValueError("ZAP report does not contain a named site element")
+    scan_url = site.get("name")
 
     for alert in root.iter("alertitem"):
         inst = []
@@ -162,7 +166,7 @@ def xml_parser(root, project_id, scan_id, request):
                 existing_record.url = scan_url
                 existing_record.title = title
                 existing_record.solution = solution
-                existing_record.instance = inst
+                existing_record.instance = json.dumps(inst, ensure_ascii=False)
                 existing_record.reference = reference
                 existing_record.description = desc
                 existing_record.severity = risk
@@ -194,7 +198,7 @@ def xml_parser(root, project_id, scan_id, request):
                 url=scan_url,
                 title=title,
                 solution=solution,
-                instance=inst,
+                instance=json.dumps(inst, ensure_ascii=False),
                 reference=reference,
                 description=desc,
                 severity=risk,

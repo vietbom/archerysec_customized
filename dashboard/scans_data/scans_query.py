@@ -236,6 +236,28 @@ def _static_finding_count(project_id, query):
     return 0
 
 
+def _zap_finding_count(project_id, query):
+    findings = WebScanResultsDb.objects.filter(
+        project__uu_id=project_id,
+        scanner__iexact="Zap",
+        vuln_status="Open",
+    ).exclude(false_positive__in=["Yes", "Duplicate"]).exclude(
+        vuln_duplicate="Yes"
+    )
+
+    if query == "total":
+        return findings.count()
+    if query == "critical":
+        return findings.filter(severity="Critical").count()
+    if query == "high":
+        return findings.filter(severity="High").count()
+    if query == "medium":
+        return findings.filter(severity="Medium").count()
+    if query == "low":
+        return findings.filter(severity="Low").count()
+    return 0
+
+
 def all_vuln(project_id, query):
     all_vuln = 0
 
@@ -257,11 +279,7 @@ def all_vuln(project_id, query):
             all_cloud_scan = 0
 
         try:
-            all_dast_scan = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("total_vul")
-                )["total_vul__sum"]
-            )
+            all_dast_scan = int(all_web(project_id, query="total"))
         except Exception as e:
             #
             all_dast_scan = 0
@@ -301,11 +319,7 @@ def all_vuln(project_id, query):
             all_cloud_scan = 0
 
         try:
-            all_dast_scan = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("critical_vul")
-                )["critical_vul__sum"]
-            )
+            all_dast_scan = int(all_web(project_id, query="critical"))
         except Exception as e:
             all_dast_scan = 0
 
@@ -343,11 +357,7 @@ def all_vuln(project_id, query):
             all_cloud_scan = 0
 
         try:
-            all_dast_scan = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("high_vul")
-                )["high_vul__sum"]
-            )
+            all_dast_scan = int(all_web(project_id, query="high"))
         except Exception as e:
             all_dast_scan = 0
 
@@ -385,11 +395,7 @@ def all_vuln(project_id, query):
             all_cloud_scan = 0
 
         try:
-            all_dast_scan = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("medium_vul")
-                )["medium_vul__sum"]
-            )
+            all_dast_scan = int(all_web(project_id, query="medium"))
         except Exception as e:
             all_dast_scan = 0
 
@@ -429,11 +435,7 @@ def all_vuln(project_id, query):
             all_cloud_scan = 0
 
         try:
-            all_dast_scan = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("low_vul")
-                )["low_vul__sum"]
-            )
+            all_dast_scan = int(all_web(project_id, query="low"))
         except Exception as e:
             #
             all_dast_scan = 0
@@ -459,65 +461,25 @@ def all_vuln(project_id, query):
 
 
 def all_web(project_id, query):
-    all_web = 0
+    scan_count_fields = {
+        "total": "total_vul",
+        "critical": "critical_vul",
+        "high": "high_vul",
+        "medium": "medium_vul",
+        "low": "low_vul",
+    }
+    field_name = scan_count_fields.get(query)
+    if field_name is None:
+        return 0
 
-    if query == "total":
-        try:
-            all_web = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("total_vul")
-                )["total_vul__sum"]
-            )
+    other_web_scans = WebScansDb.objects.filter(
+        project__uu_id=project_id
+    ).exclude(scanner__iexact="Zap")
+    historical_total = other_web_scans.aggregate(Sum(field_name))[
+        field_name + "__sum"
+    ] or 0
 
-        except Exception as e:
-            #
-            all_web = 0
-
-    elif query == "critical":
-        try:
-            all_web = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("critical_vul")
-                )["critical_vul__sum"]
-            )
-        except Exception as e:
-            #
-            all_web = 0
-
-    elif query == "high":
-        try:
-            all_web = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("high_vul")
-                )["high_vul__sum"]
-            )
-        except Exception as e:
-            #
-            all_web = 0
-
-    elif query == "medium":
-        try:
-            all_web = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("medium_vul")
-                )["medium_vul__sum"]
-            )
-        except Exception as e:
-            #
-            all_web = 0
-
-    elif query == "low":
-        try:
-            all_web = int(
-                WebScansDb.objects.filter(project__uu_id=project_id).aggregate(
-                    Sum("low_vul")
-                )["low_vul__sum"]
-            )
-        except Exception as e:
-            #
-            all_web = 0
-
-    return all_web
+    return int(historical_total) + _zap_finding_count(project_id, query)
 
 
 def all_net(project_id, query):

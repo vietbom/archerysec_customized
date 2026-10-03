@@ -60,6 +60,10 @@ COPY pyproject.toml poetry.lock ./
 # Configure Poetry to not create virtual environments
 RUN poetry config virtualenvs.create $POETRY_VIRTUALENVS_CREATE
 
+# django-compat 1.0.15 has an incomplete isolated PEP 517 build backend.
+RUN python3 -m pip install --no-cache-dir "setuptools<81" wheel && \
+    python3 -m pip install --no-cache-dir --no-build-isolation "django-compat==1.0.15"
+
 # Install dependencies
 RUN poetry install --only main --no-root --no-interaction --no-ansi
 

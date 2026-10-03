@@ -17,6 +17,7 @@
 import csv
 import io
 import json
+import logging
 import os
 import uuid
 from datetime import datetime
@@ -43,6 +44,8 @@ from tools.models import NiktoResultDb
 from user_management import permissions
 from webscanners.models import WebScansDb
 
+logger = logging.getLogger(__name__)
+
 
 class Upload(APIView):
     parser_classes = (MultiPartParser,)
@@ -63,8 +66,21 @@ class Upload(APIView):
             request, "report_upload/upload.html", {"all_project": all_project}
         )
 
-    @transaction.atomic
     def post(self, request):
+        try:
+            return self._post_atomic(request)
+        except Exception:
+            logger.exception("Report upload failed")
+            messages.error(request, "File Not Supported")
+            all_project = ProjectDb.objects.filter(
+                organization=request.user.organization
+            )
+            return render(
+                request, "report_upload/upload.html", {"all_project": all_project}
+            )
+
+    @transaction.atomic
+    def _post_atomic(self, request):
         all_project = ProjectDb.objects.filter(organization=request.user.organization)
         project_uu_id = request.POST.get("project_id")
         project_id = (
@@ -250,10 +266,5 @@ class Upload(APIView):
             messages.success(request, "File Uploaded")
             return HttpResponseRedirect(reverse(returnpage))
 
-        except Exception as e:
-            print(e)
-            transaction.set_rollback(True)
-            messages.error(request, "File Not Supported")
-            return render(
-                request, "report_upload/upload.html", {"all_project": all_project}
-            )
+        except Exception:
+            raise

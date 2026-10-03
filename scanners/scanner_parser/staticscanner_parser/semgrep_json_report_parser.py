@@ -110,7 +110,11 @@ def semgrep_report_json(data, project_id, scan_id, request):
             severity = "Medium"
             vul_col = "warning"
 
-        elif severity == "INFORMATION":
+        elif severity in ["INFORMATION", "INFO"]:
+            severity = "Low"
+            vul_col = "info"
+            
+        else: 
             severity = "Low"
             vul_col = "info"
 
