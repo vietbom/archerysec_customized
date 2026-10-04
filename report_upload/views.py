@@ -35,6 +35,7 @@ from rest_framework.views import APIView
 
 from cloudscanners.models import CloudScansDb
 from compliance.models import DockleScanDb, InspecScanDb
+from jiraticketing.services import schedule_scan_findings_processing
 from networkscanners.models import NetworkScanDb
 from projects.models import ProjectDb
 from scanners.scanner_parser import scanner_parser
@@ -261,6 +262,9 @@ class Upload(APIView):
             # Call the parser
             parserFunc = parser_dict["parserFunction"]
             parserFunc(data, project_id, scan_id, request)
+            schedule_scan_findings_processing(
+                scan_id=scan_id, organization=request.user.organization
+            )
 
             # Success !
             messages.success(request, "File Uploaded")

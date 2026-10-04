@@ -32,6 +32,9 @@ from rest_framework.views import APIView
 from archerysettings.models import SettingsDb
 from cloudscanners.models import CloudScansResultsDb
 from jiraticketing.models import jirasetting
+from jiraticketing.services import (JiraServiceError, get_jira_client,
+                                    get_result_model_for_scanner,
+                                    process_finding)
 from networkscanners.models import NetworkScanResultsDb
 from staticscanners.models import StaticScanResultsDb
 from user_management import permissions
@@ -193,40 +196,7 @@ class CreateJiraTicket(APIView):
         )
 
     def post(self, request):
-        jira_setting = jirasetting.objects.filter(
-            organization=request.user.organization
-        )
         user = request.user
-
-        jira_server = ""
-        jira_username = None
-        jira_password = None
-        jira_ser = ""
-
-        for jira in jira_setting:
-            jira_server = jira.jira_server
-            jira_username = jira.jira_username
-            jira_password = jira.jira_password
-
-        if jira_username is not None:
-            jira_username = signing.loads(jira_username)
-
-        if jira_password is not None:
-            jira_password = signing.loads(jira_password)
-
-        options = {"server": jira_server}
-        try:
-            if jira_username is not None and jira_username != "":
-                jira_ser = JIRA(
-                    options, basic_auth=(jira_username, jira_password), timeout=30
-                )
-            else:
-                jira_ser = JIRA(options, token_auth=jira_password, timeout=30)
-            # jira_projects =
-            jira_ser.projects()
-        except Exception as e:
-            print(e)
-            notify.send(user, recipient=user, verb="Jira settings not found")
         summary = request.POST.get("summary")
         description = request.POST.get("description")
         project_id = request.POST.get("project_id")
@@ -235,60 +205,73 @@ class CreateJiraTicket(APIView):
         scanner = request.POST.get("scanner")
         scan_id = request.POST.get("scan_id")
 
-        issue_dict = {
-            "project": {"id": project_id},
-            "summary": summary,
-            "description": description,
-            "issuetype": {"name": issue_type},
-        }
-        new_issue = jira_ser.create_issue(fields=issue_dict)
-
-        if scanner == "web":
-            WebScanResultsDb.objects.filter(
-                vuln_id=vuln_id, organization=request.user.organization
-            ).update(jira_ticket=new_issue)
-            messages.success(request, "Jira Ticket Submitted ID: %s", new_issue)
-            return HttpResponseRedirect(
-                reverse("webscanners:list_vuln_info")
-                + "?scan_id=%s&scan_name=%s" % (scan_id, summary)
-            )
-
-        elif scanner == "sast":
-            StaticScanResultsDb.objects.filter(
-                vuln_id=vuln_id, organization=request.user.organization
-            ).update(jira_ticket=new_issue)
-            messages.success(request, "Jira Ticket Submitted ID: %s", new_issue)
-            return HttpResponseRedirect(
-                reverse("staticscanners:list_vuln_info")
-                + "?scan_id=%s&test_name=%s" % (scan_id, summary)
-            )
-
-        elif scanner == "network":
-            NetworkScanResultsDb.objects.filter(
-                vuln_id=vuln_id, organization=request.user.organization
-            ).update(jira_ticket=new_issue)
-            ip = (
-                NetworkScanResultsDb.objects.filter(
-                    vuln_id=vuln_id, organization=request.user.organization
+        def _redirect():
+            if scanner == "web":
+                return HttpResponseRedirect(
+                    reverse("webscanners:list_vuln_info")
+                    + "?scan_id=%s&scan_name=%s" % (scan_id, summary)
                 )
-                .values("ip")
-                .get()["ip"]
-            )
+            elif scanner == "sast":
+                return HttpResponseRedirect(
+                    reverse("staticscanners:list_vuln_info")
+                    + "?scan_id=%s&test_name=%s" % (scan_id, summary)
+                )
+            elif scanner == "network":
+                ip = ""
+                network_finding = (
+                    NetworkScanResultsDb.objects.filter(
+                        vuln_id=vuln_id, organization=request.user.organization
+                    )
+                    .values("ip")
+                    .first()
+                )
+                if network_finding is not None:
+                    ip = network_finding.get("ip", "")
+                return HttpResponseRedirect(
+                    reverse("networkscanners:list_vuln_info")
+                    + "?scan_id=%s&ip=%s" % (scan_id, ip)
+                )
+            elif scanner == "cloud":
+                return HttpResponseRedirect(
+                    reverse("cloudscanners:list_vuln") + "?scan_id=%s" % (scan_id)
+                )
+            return HttpResponseRedirect(reverse("dashboard:dashboard"))
 
-            messages.success(request, "Jira Ticket Submitted ID: %s", new_issue)
-            return HttpResponseRedirect(
-                reverse("networkscanners:list_vuln_info")
-                + "?scan_id=%s&ip=%s" % (scan_id, ip)
-            )
-        elif scanner == "cloud":
-            CloudScansResultsDb.objects.filter(
-                vuln_id=vuln_id, organization=request.user.organization
-            ).update(jira_ticket=new_issue)
+        model = get_result_model_for_scanner(scanner)
+        if model is None:
+            messages.warning(request, "Invalid scanner type")
+            return _redirect()
 
-            messages.success(request, "Jira Ticket Submitted ID: %s", new_issue)
-            return HttpResponseRedirect(
-                reverse("cloudscanners:list_vuln") + "?scan_id=%s" % (scan_id)
+        finding = model.objects.filter(
+            vuln_id=vuln_id, organization=request.user.organization
+        ).first()
+        if finding is None:
+            messages.warning(request, "Finding not found")
+            return _redirect()
+
+        try:
+            jira_client = get_jira_client(request.user.organization)
+            finding_result = process_finding(
+                finding=finding,
+                jira_client=jira_client,
+                jira_project_id=project_id,
+                issue_type=issue_type,
+                summary=summary,
+                description=description,
+                existing_ticket_comment="Finding manually re-submitted from ArcherySec.",
             )
+            ticket_id = finding_result.get("ticket")
+            if finding_result.get("status") == "created":
+                messages.success(request, "Jira Ticket Submitted ID: %s" % ticket_id)
+            elif finding_result.get("status") == "updated":
+                messages.success(request, "Jira Ticket Updated ID: %s" % ticket_id)
+            else:
+                messages.warning(request, "Jira ticket not created")
+        except JiraServiceError:
+            notify.send(user, recipient=user, verb="Jira settings not found")
+            messages.warning(request, "Jira settings not found")
+
+        return _redirect()
 
 
 class LinkJiraTicket(APIView):
