@@ -1,6 +1,8 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
 
+{% block body_class %}dashboard-home{% endblock %}
+
 {% block body %}
 {#    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css" rel="stylesheet">#}
 
@@ -17,10 +19,10 @@
         </div>
 
         {% if total_count_project.total_vuln__sum >= 0 %}
-            <div class="row">
+            <div class="row dashboard-stat-grid">
                 <!-- Column -->
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--total">
                         <div class="box bg-danger text-center">
                             <h1 class="font-light text-white">{{ total_count_project.total_vuln__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=All"><h6
@@ -30,7 +32,7 @@
                 </div>
                 <!-- Column -->
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--false-positive">
                         <div class="box bg-warning text-center">
                             <h1 class="font-light text-white">{{ false_count_project.total_false__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=All_False_Positive">
@@ -40,7 +42,7 @@
                 </div>
                 <!-- Column -->
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--closed">
                         <div class="box bg-cyan text-center">
                             <h1 class="font-light text-white">{{ close_count_project.total_close__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=All_Closed"><h6
@@ -50,7 +52,7 @@
                 </div>
                 <!-- Column -->
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--infrastructure">
                         <div class="box bg-info text-center">
                             <h1 class="font-light text-white">{{ net_count_project.total_net__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Network"><h6
@@ -60,7 +62,7 @@
                 </div>
                 <!-- Column -->
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--web">
                         <div class="box bg-success text-center">
                             <h1 class="font-light text-white">{{ web_count_project.total_web__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Web"><h6
@@ -71,7 +73,7 @@
                 <!-- Column -->
                 <!-- Column -->
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--static">
                         <div class="box bg-cyan  text-center">
                             <h1 class="font-light text-white">{{ static_count_project.total_static__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Static"><h6
@@ -80,7 +82,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover">
+                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--cloud">
                         <div class="box bg-dark text-center">
                             <h1 class="font-light text-white">{{ cloud_count_project.total_cloud__sum }}</h1>
                             <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Cloud"><h6
@@ -91,7 +93,7 @@
             </div>
             <div class="row">
                 <div class="col">
-                    <div class="card">
+                    <div class="card dashboard-chart-card dashboard-chart-card--trend">
                         <div class="card-body">
                             <div class="d-md-flex align-items-center">
                                 <div>
@@ -104,7 +106,7 @@
                     </div>
                 </div>
                 <div class="col">
-                    <div class="card">
+                    <div class="card dashboard-chart-card dashboard-chart-card--overview">
                         <div class="card-body">
                             <div class="d-md-flex align-items-center">
                                 <div>
@@ -117,62 +119,44 @@
                     </div>
                 </div>
             </div>
-            <div class="row">
-                <div class="col">
-                    <div class="card">
+            <div class="row dashboard-chart-grid">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card dashboard-chart-card dashboard-chart-card--web dashboard-chart-card--scanner">
                         <div class="card-body">
-                            <div class="d-md-flex align-items-center">
-                                <div>
-                                    <h6>Web Vulnerabilities</h6>
-                                    <h6 class="card-subtitle"></h6>
-                                </div>
-                            </div>
+                            <h6>Web Vulnerabilities</h6>
                             <canvas id="webpie"></canvas>
                         </div>
                     </div>
-    <!--                </div>-->
-    <!--                <div class="col">-->
-                    <div class="card">
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card dashboard-chart-card dashboard-chart-card--network dashboard-chart-card--scanner">
                         <div class="card-body">
-                            <div class="d-md-flex align-items-center">
-                                <div>
-                                    <h6>Network Vulnerabilities</h6>
-                                    <h5 class="card-subtitle"></h5>
-                                </div>
-                            </div>
+                            <h6>Network Vulnerabilities</h6>
                             <canvas id="networkpie"></canvas>
                         </div>
                     </div>
                 </div>
-                <div class="col">
-                    <div class="card">
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card dashboard-chart-card dashboard-chart-card--static dashboard-chart-card--scanner">
                         <div class="card-body">
-                            <div class="d-md-flex align-items-center">
-                                <div>
-                                    <h6>Static Vulnerabilities</h6>
-                                    <h5 class="card-subtitle"></h5>
-                                </div>
-                            </div>
+                            <h6>Static Vulnerabilities</h6>
                             <canvas id="staticpie"></canvas>
                         </div>
                     </div>
-                    <div class="card">
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="card dashboard-chart-card dashboard-chart-card--cloud dashboard-chart-card--scanner">
                         <div class="card-body">
-                            <div class="d-md-flex align-items-center">
-                                <div>
-                                    <h6>Cloud Issues</h6>
-                                    <h5 class="card-subtitle"></h5>
-                                </div>
-                            </div>
+                            <h6>Cloud Issues</h6>
                             <canvas id="cloudpie"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
         {% endif %}
-            <div class="row">
+            <div class="row dashboard-project-list-row">
                 <div class="col-md-12">
-                    <div class="card">
+                    <div class="card dashboard-project-list-card">
                         <div class="card-body">
 
 

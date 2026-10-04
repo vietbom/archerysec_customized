@@ -15,6 +15,7 @@
     <link href="{% static 'matrix-admin-bt4/assets/libs/toastr/build/toastr.min.css' %}" rel="stylesheet">
 
     <link href="{% static 'matrix-admin-bt4/dist/css/style.min.css' %}" rel="stylesheet">
+    <link href="{% static 'archerysecurity/css/navigation.css' %}" rel="stylesheet">
     <link href="{% static 'matrix-admin-bt4/dist/css/slider.css' %}" rel="stylesheet">
     <link rel="stylesheet" type="text/css"
           href="{% static 'matrix-admin-bt4/assets/libs/select2/dist/css/select2.min.css' %}">
@@ -33,9 +34,10 @@
           rel="stylesheet">
     <link rel="stylesheet" type="text/css"
           href="{% static 'matrix-admin-bt4/assets/libs/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css' %}">
+    {% block extra_css %}{% endblock %}
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
 <div class="preloader">
     <div class="lds-ripple">
         <div class="lds-pos"></div>
