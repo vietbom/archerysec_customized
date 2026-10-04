@@ -18,6 +18,7 @@ import csv
 import datetime
 import io
 import json
+import logging
 import os
 import secrets
 import uuid
@@ -47,6 +48,7 @@ from cicd.models import CicdDb
 from cicd.serializers import GetPoliciesSerializers
 from cloudscanners.models import CloudScansDb, CloudScansResultsDb
 from compliance.models import DockleScanDb, InspecScanDb
+from jiraticketing.services import schedule_scan_findings_processing
 from jiraticketing.models import jirasetting
 from networkscanners.models import NetworkScanDb, NetworkScanResultsDb
 from projects.models import MonthDb, ProjectDb
@@ -59,6 +61,8 @@ from tools.models import NiktoResultDb
 from user_management import permissions
 from user_management.models import Organization, UserProfile
 from webscanners.models import WebScanResultsDb, WebScansDb
+
+logger = logging.getLogger(__name__)
 
 
 class CreateProject(APIView):
@@ -317,34 +321,47 @@ class UploadScanResult(APIView):
             )
         need_to_store = True
         custom_return = False
-        # Store to database - regular types
-        if "dbname" in parser_dict:
-            db_name = parser_dict.get("dbname", "Unknown")
-            if db_type == "WebScans":
-                return_func = self.web_result_data
-                scan_dump = WebScansDb(
-                    scan_url=scan_url,
-                    scan_id=scan_id,
-                    project_id=project_id,
-                    scan_status=scan_status,
-                    scanner=db_name,
-                )
-            elif db_type == "StaticScans":
-                return_func = self.sast_result_data
-                scan_dump = StaticScansDb(
-                    project_name=scan_url,
-                    scan_id=scan_id,
-                    project_id=project_id,
-                    scan_status=scan_status,
-                    scanner=db_name,
-                )
-            elif db_type == "NetworkScan":
-                return_func = self.network_result_data
-                # OpenVAS special case
-                if scanner == "openvas":
-                    need_to_store = False
-                    hosts = OpenVas_Parser.get_hosts(root_xml)
-                    for host in hosts:
+
+        with transaction.atomic():
+            # Store to database - regular types
+            if "dbname" in parser_dict:
+                db_name = parser_dict.get("dbname", "Unknown")
+                if db_type == "WebScans":
+                    return_func = self.web_result_data
+                    scan_dump = WebScansDb(
+                        scan_url=scan_url,
+                        scan_id=scan_id,
+                        project_id=project_id,
+                        scan_status=scan_status,
+                        scanner=db_name,
+                    )
+                elif db_type == "StaticScans":
+                    return_func = self.sast_result_data
+                    scan_dump = StaticScansDb(
+                        project_name=scan_url,
+                        scan_id=scan_id,
+                        project_id=project_id,
+                        scan_status=scan_status,
+                        scanner=db_name,
+                    )
+                elif db_type == "NetworkScan":
+                    return_func = self.network_result_data
+                    # OpenVAS special case
+                    if scanner == "openvas":
+                        need_to_store = False
+                        hosts = OpenVas_Parser.get_hosts(root_xml)
+                        for host in hosts:
+                            scan_dump = NetworkScanDb(
+                                ip=host,
+                                scan_id=scan_id,
+                                project_id=project_id,
+                                scan_status=scan_status,
+                                scanner=db_name,
+                            )
+                            scan_dump.save()
+                    # Regular network scan case
+                    else:
+                        host = parser_dict["getHostFunction"](data)
                         scan_dump = NetworkScanDb(
                             ip=host,
                             scan_id=scan_id,
@@ -352,62 +369,61 @@ class UploadScanResult(APIView):
                             scan_status=scan_status,
                             scanner=db_name,
                         )
-                        scan_dump.save()
-                # Regular network scan case
-                else:
-                    host = parser_dict["getHostFunction"](data)
-                    scan_dump = NetworkScanDb(
-                        ip=host,
+                elif db_type == "CloudScans":
+                    return_func = self.cloud_result_data
+                    scan_dump = CloudScansDb(
                         scan_id=scan_id,
+                        date_time=date_time,
                         project_id=project_id,
                         scan_status=scan_status,
+                        rescan="No",
                         scanner=db_name,
                     )
-            elif db_type == "CloudScans":
-                return_func = self.cloud_result_data
-                scan_dump = CloudScansDb(
+            # Store to database - custom types
+            elif db_type == "NiktoResult":
+                custom_return = True
+                scan_dump = NiktoResultDb(
+                    scan_url=scan_url,
+                    scan_id=scan_id,
+                    project_id=project_id,
+                )
+            elif db_type == "InspecScan":
+                custom_return = True
+                scan_dump = InspecScanDb(
+                    project_name=scan_url,
+                    scan_id=scan_id,
+                    project_id=project_id,
+                    scan_status=scan_status,
+                )
+            elif db_type == "DockleScan":
+                custom_return = True
+                scan_dump = DockleScanDb(
                     scan_id=scan_id,
                     date_time=date_time,
                     project_id=project_id,
                     scan_status=scan_status,
-                    rescan="No",
-                    scanner=db_name,
                 )
-        # Store to database - custom types
-        elif db_type == "NiktoResult":
-            custom_return = True
-            scan_dump = NiktoResultDb(
-                scan_url=scan_url,
-                scan_id=scan_id,
-                project_id=project_id,
-            )
-        elif db_type == "InspecScan":
-            custom_return = True
-            scan_dump = InspecScanDb(
-                project_name=scan_url,
-                scan_id=scan_id,
-                project_id=project_id,
-                scan_status=scan_status,
-            )
-        elif db_type == "DockleScan":
-            custom_return = True
-            scan_dump = DockleScanDb(
-                scan_id=scan_id,
-                date_time=date_time,
-                project_id=project_id,
-                scan_status=scan_status,
-            )
-        elif db_type == "Nessus":
-            return_func = self.network_result_data
-            need_to_store = False
-            # Nessus does not store before the parser
-        # Store the dump (except for no need to store cases)
-        if need_to_store is True:
-            scan_dump.save()
+            elif db_type == "Nessus":
+                return_func = self.network_result_data
+                need_to_store = False
+                # Nessus does not store before the parser
+            # Store the dump (except for no need to store cases)
+            if need_to_store is True:
+                scan_dump.save()
 
-        # Call the parser
-        parser_func = parser_dict["parserFunction"]
-        parser_func(data, project_id, scan_id, request)
+            # Call the parser
+            parser_func = parser_dict["parserFunction"]
+            parser_func(data, project_id, scan_id, request)
+
+            if getattr(request.user, "organization", None) is not None:
+                schedule_scan_findings_processing(
+                    scan_id=scan_id, organization=request.user.organization
+                )
+            else:
+                logger.warning(
+                    "Skipping Jira processing registration for scan_id=%s without organization",
+                    scan_id,
+                )
 
         # Success !
         if custom_return is True:
