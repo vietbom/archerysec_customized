@@ -18,11 +18,9 @@ import json
 import time
 import uuid
 
-from django.core import signing
 from django.http import HttpResponseRedirect
 from django.shortcuts import HttpResponse, render
 from django.urls import reverse
-from jira import JIRA
 from notifications.models import Notification
 from PyBurprestapi import burpscanner
 from rest_framework.permissions import IsAuthenticated
@@ -34,6 +32,7 @@ from archerysettings.models import (ArachniSettingsDb, BurpSettingDb, EmailDb,
                                     OpenvasSettingDb, SettingsDb,
                                     ZapSettingsDb)
 from jiraticketing.models import jirasetting
+from jiraticketing.services import get_jira_projects
 from scanners.scanner_plugin.network_scanner.openvas_plugin import \
     OpenVAS_Plugin
 from scanners.scanner_plugin.web_scanner import burp_plugin, zap_plugin
@@ -136,9 +135,6 @@ class Settings(APIView):
     def post(self, request):
         all_notify = Notification.objects.unread()
 
-        jira_url = None
-        j_username = None
-        password = None
         # Loading settings
 
         all_settings_data = SettingsDb.objects.filter(
@@ -187,25 +183,6 @@ class Settings(APIView):
             burp_host = data.burp_url
             burp_port = data.burp_port
             burp_api_key = data.burp_api_key
-
-        jira_setting = jirasetting.objects.filter(
-            organization=request.user.organization
-        )
-
-        for jira in jira_setting:
-            jira_url = jira.jira_server
-            j_username = jira.jira_username
-            password = jira.jira_password
-        jira_server = jira_url
-        if j_username is None:
-            jira_username = None
-        else:
-            jira_username = signing.loads(j_username)
-
-        if password is None:
-            jira_password = None
-        else:
-            jira_password = signing.loads(password)
 
         zap_enabled = False
         random_port = "8091"
@@ -335,47 +312,16 @@ class Settings(APIView):
                 ).update(setting_status=arachni_info)
 
         if setting_of == "jira":
-            global jira_projects, jira_ser
-            jira_setting = jirasetting.objects.filter(
-                organization=request.user.organization
-            )
-
-            for jira in jira_setting:
-                jira_url = jira.jira_server
-                username = jira.jira_username
-                password = jira.jira_password
-
-                if jira_url is None:
-                    print("No jira url found")
-
+            jira_info = False
             try:
-                jira_server = jira_url
-                jira_username = signing.loads(username)
-                jira_password = signing.loads(password)
+                get_jira_projects(request.user.organization)
+                jira_info = True
             except Exception:
                 jira_info = False
 
-            options = {"server": jira_server}
-            try:
-                if jira_username is not None and jira_username != "":
-                    jira_ser = JIRA(
-                        options, basic_auth=(jira_username, jira_password), timeout=5
-                    )
-                else:
-                    jira_ser = JIRA(options, token_auth=jira_password, timeout=5)
-
-                jira_projects = jira_ser.projects()
-                print(len(jira_projects))
-                jira_info = True
-                SettingsDb.objects.filter(
-                    setting_id=setting_id, organization=request.user.organization
-                ).update(setting_status=jira_info)
-            except Exception as e:
-                print(e)
-                jira_info = False
-                SettingsDb.objects.filter(
-                    setting_id=setting_id, organization=request.user.organization
-                ).update(setting_status=jira_info)
+            SettingsDb.objects.filter(
+                setting_id=setting_id, organization=request.user.organization
+            ).update(setting_status=jira_info)
 
         return render(
             request,

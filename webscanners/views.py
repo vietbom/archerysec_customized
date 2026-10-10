@@ -19,11 +19,9 @@ from __future__ import unicode_literals
 import hashlib
 
 from django.contrib import messages
-from django.core import signing
 from django.http import HttpResponseRedirect
 from django.shortcuts import HttpResponse, render
 from django.urls import reverse
-from jira import JIRA
 from notifications.models import Notification
 from notifications.signals import notify
 from rest_framework import status
@@ -33,6 +31,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from jiraticketing.models import jirasetting
+from jiraticketing.services import get_jira_projects
 from user_management import permissions
 from webscanners.models import WebScanResultsDb, WebScansDb
 from webscanners.serializers import (WebScanResultsDbSerializer,
@@ -176,40 +175,10 @@ class WebScanDetails(APIView):
         jira_projects = None
         vuln_id = request.GET["vuln_id"]
 
-        jira_setting = jirasetting.objects.filter(
-            organization=request.user.organization
-        )
-        # user = request.user
-
-        for jira in jira_setting:
-            jira_server = jira.jira_server
-            jira_username = jira.jira_username
-            jira_password = jira.jira_password
-
-        if jira_username is not None:
-            jira_username = signing.loads(jira_username)
-
-        if jira_password is not None:
-            jira_password = signing.loads(jira_password)
-
-        options = {"server": jira_server}
         try:
-            if jira_username is not None and jira_username != "":
-                jira_ser = JIRA(
-                    options,
-                    basic_auth=(jira_username, jira_password),
-                    max_retries=0,
-                    timeout=30,
-                )
-            else:
-                jira_ser = JIRA(
-                    options, token_auth=jira_password, max_retries=0, timeout=30
-                )
-            jira_projects = jira_ser.projects()
-        except Exception as e:
-            print(e)
+            jira_projects = get_jira_projects(request.user.organization)
+        except Exception:
             jira_projects = None
-            # notify.send(user, recipient=user, verb="Jira settings not found")
 
         vul_dat = WebScanResultsDb.objects.filter(
             vuln_id=vuln_id, organization=request.user.organization

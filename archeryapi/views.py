@@ -23,14 +23,12 @@ import secrets
 import uuid
 
 import defusedxml.ElementTree as ET
-from django.core import signing
 from django.core.files.uploadedfile import UploadedFile
 from django.db import transaction
 from django.db.models import F, TextField, Value
 from django.db.models.functions import Cast, Concat
 from django.shortcuts import HttpResponseRedirect, render, reverse
 from django.utils.html import escape
-from jira import JIRA
 from lxml import etree
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -47,7 +45,11 @@ from cicd.models import CicdDb
 from cicd.serializers import GetPoliciesSerializers
 from cloudscanners.models import CloudScansDb, CloudScansResultsDb
 from compliance.models import DockleScanDb, InspecScanDb
-from jiraticketing.models import jirasetting
+from jiraticketing.services import (
+    get_jira_client,
+    link_jira_issues,
+    process_scan_findings,
+)
 from networkscanners.models import NetworkScanDb, NetworkScanResultsDb
 from projects.models import MonthDb, ProjectDb
 from projects.serializers import (ProjectCreateSerializers,
@@ -242,6 +244,7 @@ class UploadScanResult(APIView):
             }
         )
 
+    @transaction.atomic
     def post(self, request, format=None):
         date_time = datetime.datetime.now()
         project_uu_id = request.data.get("project_id")
@@ -408,6 +411,26 @@ class UploadScanResult(APIView):
         # Call the parser
         parser_func = parser_dict["parserFunction"]
         parser_func(data, project_id, scan_id, request)
+
+        db_name = parser_dict.get("dbname", scanner)
+        if db_type in ("StaticScans", "WebScans") and db_name.lower() in {
+            "gitleaks",
+            "semgrep",
+            "trivy",
+            "zap",
+        }:
+            api_key = OrgAPIKey.objects.get(
+                api_key=request.META.get("HTTP_X_API_KEY"), is_active=True
+            )
+            transaction.on_commit(
+                lambda: process_scan_findings(
+                    project_id,
+                    scan_id,
+                    api_key.organization_id,
+                    db_name,
+                ),
+                robust=True,
+            )
 
         # Success !
         if custom_return is True:
@@ -681,55 +704,29 @@ class UpdateJiraTicket(APIView):
             current_jira_ticket_id = request.data.get(
                 "current_jira_ticket_id",
             )
-            jira_setting = jirasetting.objects.filter(
-                organization=request.user.organization
+            try:
+                organization = getattr(request.user, "organization", None)
+                if organization is None:
+                    api_key = OrgAPIKey.objects.filter(
+                        api_key=request.META.get("HTTP_X_API_KEY"), is_active=True
+                    ).select_related("organization").first()
+                    organization = api_key.organization if api_key else None
+                if organization is None:
+                    raise ValueError("Organization could not be resolved")
+                jira_client = get_jira_client(organization)
+                link_jira_issues(
+                    jira_client,
+                    current_jira_ticket_id,
+                    link_jira_ticket_id,
+                )
+            except Exception:
+                return Response(
+                    {"message": "Jira settings or ticket could not be found"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+            return Response(
+                {"message": "Jira Linked with %s" % link_jira_ticket_id},
+                status=status.HTTP_200_OK,
             )
-
-            jira_server = ""
-            jira_username = None
-            jira_password = None
-            jira_ser = ""
-
-            for jira in jira_setting:
-                jira_server = jira.jira_server
-                jira_username = jira.jira_username
-                jira_password = jira.jira_password
-
-            if jira_username is not None:
-                jira_username = signing.loads(jira_username)
-
-            if jira_password is not None:
-                jira_password = signing.loads(jira_password)
-
-            options = {"server": jira_server}
-            try:
-                if jira_username is not None and jira_username != "":
-                    jira_ser = JIRA(
-                        options, basic_auth=(jira_username, jira_password), timeout=30
-                    )
-                else:
-                    jira_ser = JIRA(options, token_auth=jira_password, timeout=30)
-            except Exception as e:
-                return Response(
-                    {"message": "Jira settings not found"},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
-            try:
-                jira_ser.create_issue_link(
-                    type="duplicates",
-                    inwardIssue=current_jira_ticket_id,
-                    outwardIssue=link_jira_ticket_id,
-                )
-                return Response(
-                    {"message": "Jira Linked with %s" % link_jira_ticket_id},
-                    status=status.HTTP_200_OK,
-                )
-            except:
-                return Response(
-                    {
-                        "message": "Something not correct, please check Jira tickets and Vuln id"
-                    },
-                    status=status.HTTP_404_NOT_FOUND,
-                )
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

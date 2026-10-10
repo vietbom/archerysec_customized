@@ -30,7 +30,7 @@ services:
       - DB_NAME=archerysec
       - DB_HOST=db
       - DJANGO_SETTINGS_MODULE=archerysecurity.settings.development
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-"SETME"}
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-SETME}
       - DJANGO_DEBUG=1
       - EMAIL_HOST=mailhog
       - EMAIL_PORT=1025

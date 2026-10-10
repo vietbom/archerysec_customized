@@ -35,6 +35,7 @@ from rest_framework.views import APIView
 
 from cloudscanners.models import CloudScansDb
 from compliance.models import DockleScanDb, InspecScanDb
+from jiraticketing.services import process_scan_findings
 from networkscanners.models import NetworkScanDb
 from projects.models import ProjectDb
 from scanners.scanner_parser import scanner_parser
@@ -261,6 +262,23 @@ class Upload(APIView):
             # Call the parser
             parserFunc = parser_dict["parserFunction"]
             parserFunc(data, project_id, scan_id, request)
+
+            db_name = parser_dict.get("dbname", scanner)
+            if db_type in ("StaticScans", "WebScans") and db_name.lower() in {
+                "gitleaks",
+                "semgrep",
+                "trivy",
+                "zap",
+            }:
+                transaction.on_commit(
+                    lambda: process_scan_findings(
+                        project_id,
+                        scan_id,
+                        request.user.organization_id,
+                        db_name,
+                    ),
+                    robust=True,
+                )
 
             # Success !
             messages.success(request, "File Uploaded")

@@ -242,6 +242,9 @@ CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']  # All
 CORS_ALLOW_HEADERS = ['Authorization', 'Content-Type']  # Allowed request headers
 CORS_EXPOSE_HEADERS = ['Content-Disposition']  # Headers exposed to the client
 
+JIRA_DEFAULT_PROJECT_ID = os.getenv("JIRA_DEFAULT_PROJECT_ID", "")
+JIRA_DEFAULT_ISSUE_TYPE = os.getenv("JIRA_DEFAULT_ISSUE_TYPE", "Bug")
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,

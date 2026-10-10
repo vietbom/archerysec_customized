@@ -27,6 +27,8 @@ class jirasetting(models.Model):
     jira_server = models.TextField(blank=True, null=True)
     jira_username = models.TextField(blank=True, null=True)
     jira_password = models.TextField(blank=True, null=True)
+    jira_project_id = models.CharField(max_length=64, blank=True, null=True)
+    jira_issue_type = models.CharField(max_length=64, default="Bug")
     created_time = models.DateTimeField(
         auto_now=True,
         blank=True,
