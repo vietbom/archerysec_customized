@@ -6,7 +6,7 @@ from jira import JIRA
 from jira.exceptions import JIRAError
 
 from cloudscanners.models import CloudScansResultsDb
-from jiraticketing.models import jirasetting
+from jiraticketing.models import JiraSyncJob, jirasetting
 from networkscanners.models import NetworkScanResultsDb
 from staticscanners.models import StaticScanResultsDb
 from webscanners.models import WebScanResultsDb
@@ -197,8 +197,11 @@ def _finding_description(finding, scan_id=None):
     ]
     if finding.solution:
         parts.append("Remediation: %s" % finding.solution)
-    if finding.references:
-        parts.append("References: %s" % finding.references)
+    references = getattr(finding, "references", None) or getattr(
+        finding, "reference", None
+    )
+    if references:
+        parts.append("References: %s" % references)
     if finding.dup_hash:
         parts.append("Fingerprint: %s" % finding.dup_hash)
     if scan_id:
@@ -313,7 +316,7 @@ def process_scan_findings(project_id, scan_id, organization, scanner):
             process_finding(
                 finding,
                 jira_client=client,
-            jira_project_id=destination_project,
+                jira_project_id=destination_project,
                 issue_type=config["issue_type"],
                 scan_id=scan_id,
             )
@@ -326,6 +329,56 @@ def process_scan_findings(project_id, scan_id, organization, scanner):
             scanner,
         )
         return []
+
+
+def find_scan_finding(finding_id, scan_id, scanner, organization):
+    model, scanner_name = _scanner_result_model(scanner)
+    findings = model.objects.filter(
+        vuln_id=finding_id,
+        scan_id=scan_id,
+        organization_id=getattr(organization, "pk", organization),
+    )
+    if scanner_name:
+        findings = findings.filter(scanner__iexact=scanner_name)
+    return findings.order_by("-updated_time").first()
+
+
+def enqueue_scan_findings(project_id, scan_id, organization, scanner):
+    """Persist Jira work after a committed scan and schedule background tasks."""
+    model, scanner_name = _scanner_result_model(scanner)
+    findings = model.objects.filter(
+        project_id=project_id,
+        scan_id=scan_id,
+        organization_id=getattr(organization, "pk", organization),
+        vuln_status="Open",
+        false_positive="No",
+        vuln_duplicate="No",
+    )
+    if scanner_name:
+        findings = findings.filter(scanner__iexact=scanner_name)
+
+    organization_id = getattr(organization, "pk", organization)
+    eligible_count = findings.count()
+    created_count = 0
+    for finding in findings.iterator():
+        job, created = JiraSyncJob.objects.get_or_create(
+            finding_id=finding.vuln_id,
+            scan_id=scan_id,
+            scanner=finding.scanner or scanner,
+            organization_id=organization_id,
+            defaults={"project_id": project_id},
+        )
+        if created:
+            created_count += 1
+
+    logger.info(
+        "Enqueued Jira sync jobs: scanner=%s scan_id=%s eligible_findings=%d "
+        "new_jobs=%d",
+        scanner,
+        scan_id,
+        eligible_count,
+        created_count,
+    )
 
 
 def find_finding(vuln_id, scanner, organization):

@@ -35,7 +35,7 @@ from rest_framework.views import APIView
 
 from cloudscanners.models import CloudScansDb
 from compliance.models import DockleScanDb, InspecScanDb
-from jiraticketing.services import process_scan_findings
+from jiraticketing.services import enqueue_scan_findings
 from networkscanners.models import NetworkScanDb
 from projects.models import ProjectDb
 from scanners.scanner_parser import scanner_parser
@@ -271,7 +271,7 @@ class Upload(APIView):
                 "zap",
             }:
                 transaction.on_commit(
-                    lambda: process_scan_findings(
+                    lambda: enqueue_scan_findings(
                         project_id,
                         scan_id,
                         request.user.organization_id,

@@ -47,3 +47,41 @@ class jirasetting(models.Model):
     )
     is_active = models.BooleanField(default=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, default=1)
+
+
+class JiraSyncJob(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_PROCESSING = "processing"
+    STATUS_SUCCEEDED = "succeeded"
+    STATUS_RETRY = "retry"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "Pending"),
+        (STATUS_PROCESSING, "Processing"),
+        (STATUS_SUCCEEDED, "Succeeded"),
+        (STATUS_RETRY, "Retry"),
+        (STATUS_FAILED, "Failed"),
+    )
+
+    finding_id = models.UUIDField()
+    scan_id = models.UUIDField()
+    project_id = models.IntegerField()
+    scanner = models.CharField(max_length=64)
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+    status = models.CharField(
+        max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING
+    )
+    attempts = models.PositiveIntegerField(default=0)
+    next_retry_at = models.DateTimeField(null=True, blank=True)
+    last_error = models.TextField(blank=True, default="")
+    created_time = models.DateTimeField(auto_now_add=True)
+    updated_time = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("finding_id", "scan_id", "scanner", "organization"),
+                name="unique_jira_sync_finding_scan",
+            )
+        ]

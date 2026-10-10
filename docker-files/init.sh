@@ -12,8 +12,7 @@ else
     sleep 1
   done
 
-  >&2 echo "Postgres is up - executing migrations"
-  exec $cmd
+      >&2 echo "Postgres is up"
 fi
 
 echo "Checking Variables"
@@ -44,7 +43,8 @@ fi
 
 if [ "$ARCHERY_WORKER" = "True" ]
 then
-    python3 -u manage.py process_tasks -v 3 --traceback
+      python3 manage.py migrate --noinput
+      python3 -u manage.py process_jira_sync_jobs
 else
     python3 manage.py makemigrations
     python3 manage.py migrate --noinput

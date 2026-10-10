@@ -46,9 +46,9 @@ from cicd.serializers import GetPoliciesSerializers
 from cloudscanners.models import CloudScansDb, CloudScansResultsDb
 from compliance.models import DockleScanDb, InspecScanDb
 from jiraticketing.services import (
+    enqueue_scan_findings,
     get_jira_client,
     link_jira_issues,
-    process_scan_findings,
 )
 from networkscanners.models import NetworkScanDb, NetworkScanResultsDb
 from projects.models import MonthDb, ProjectDb
@@ -423,7 +423,7 @@ class UploadScanResult(APIView):
                 api_key=request.META.get("HTTP_X_API_KEY"), is_active=True
             )
             transaction.on_commit(
-                lambda: process_scan_findings(
+                lambda: enqueue_scan_findings(
                     project_id,
                     scan_id,
                     api_key.organization_id,
