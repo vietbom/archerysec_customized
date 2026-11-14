@@ -79,8 +79,7 @@
                             </a>
                         </h5>
                     </div>
-                    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
-                         data-parent="#accordionExample">
+                    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne">
                         <div class="card-body">
                             {{ data.description }}
 
@@ -97,8 +96,7 @@
                             </a>
                         </h5>
                     </div>
-                    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
-                         data-parent="#accordionExample">
+                    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
                         <div class="card-body">
                             <div class="col-md-6">
                                 File: {{ data.fileName }}
@@ -116,8 +114,7 @@
                             </a>
                         </h5>
                     </div>
-                    <div id="collapseThree" class="collapse" aria-labelledby="headingThree"
-                         data-parent="#accordionExample">
+                    <div id="collapseThree" class="collapse" aria-labelledby="headingThree">
                         <div class="card-body">
                             {{ data.solution }}
                         </div>
@@ -133,10 +130,9 @@
                             </a>
                         </h5>
                     </div>
-                    <div id="collapseFour" class="collapse" aria-labelledby="headingFour"
-                         data-parent="#accordionExample">
+                    <div id="collapseFour" class="collapse" aria-labelledby="headingFour">
                         <div class="card-body">
-                            <a href="{{ data.references }}">{{ data.references }}</a>
+                            {% include "base/_references.html" with value=data.references %}
                         </div>
                     </div>
                 </div>

@@ -28,7 +28,7 @@ parser_function_dict = {}
 module_paths = glob.glob("./scanners/scanner_parser/*/*.py", recursive=True)
 for module_path in module_paths:
     if os.path.basename(module_path) != "__init__.py":
-        module_name = os.path.normpath(module_path).split(".py")[0].replace("/", ".")
+        module_name = os.path.normpath(module_path).split(".py")[0].replace("\\", ".").replace("/", ".")
         module_id = importlib.import_module(module_name)
         parser_function_dict.update(module_id.parser_header_dict)
 

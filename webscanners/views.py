@@ -16,7 +16,9 @@
 
 from __future__ import unicode_literals
 
-import hashlib
+from urllib.parse import urlencode
+
+from utility.finding_status import mark_finding
 
 from django.contrib import messages
 from django.http import HttpResponseRedirect
@@ -34,6 +36,7 @@ from jiraticketing.models import jirasetting
 from jiraticketing.services import get_jira_projects
 from user_management import permissions
 from webscanners.models import WebScanResultsDb, WebScansDb
+from webscanners.scan_history import delete_scans, findings_for_scan
 from webscanners.serializers import (WebScanResultsDbSerializer,
                                      WebScansDbSerializer)
 
@@ -68,14 +71,10 @@ class WebScanVulnInfo(APIView):
         if uu_id is None:
             scan_id = request.GET["scan_id"]
             name = request.GET["scan_name"]
-            vuln_data = WebScanResultsDb.objects.filter(
-                title=name, scan_id=scan_id, organization=request.user.organization
-            )
+            vuln_data = findings_for_scan(scan_id, request.user.organization).filter(title=name)
         else:
             try:
-                vuln_data = WebScanResultsDb.objects.filter(
-                    scan_id=uu_id, organization=request.user.organization
-                )
+                vuln_data = findings_for_scan(uu_id, request.user.organization)
             except Exception:
                 return Response(
                     {"message": "Scan Id Doesn't Exist"},
@@ -100,65 +99,11 @@ class WebScanVulnMark(APIView):
     permission_classes = (IsAuthenticated, permissions.IsAnalyst)
 
     def post(self, request):
-        false_positive = request.POST.get("false")
-        status = request.POST.get("status")
-        vuln_id = request.POST.get("vuln_id")
-        scan_id = request.POST.get("scan_id")
-        vuln_name = request.POST.get("vuln_name")
-        notes = request.POST.get("note")
-        WebScanResultsDb.objects.filter(
-            vuln_id=vuln_id, scan_id=scan_id, organization=request.user.organization
-        ).update(false_positive=false_positive, vuln_status=status, note=notes)
-
-        if false_positive == "Yes":
-            vuln_info = WebScanResultsDb.objects.filter(
-                scan_id=scan_id, vuln_id=vuln_id, organization=request.user.organization
-            )
-            for vi in vuln_info:
-                name = vi.title
-                url = vi.url
-                severity = vi.severity
-                dup_data = name + url + severity
-                false_positive_hash = hashlib.sha256(
-                    dup_data.encode("utf-8")
-                ).hexdigest()
-                WebScanResultsDb.objects.filter(
-                    vuln_id=vuln_id,
-                    scan_id=scan_id,
-                    organization=request.user.organization,
-                ).update(
-                    false_positive=false_positive,
-                    vuln_status="Closed",
-                    false_positive_hash=false_positive_hash,
-                    note=notes,
-                )
-
-        all_vuln = WebScanResultsDb.objects.filter(
-            scan_id=scan_id,
-            false_positive="No",
-            vuln_status="Open",
-            organization=request.user.organization,
-        )
-
-        total_high = len(all_vuln.filter(severity="High"))
-        total_medium = len(all_vuln.filter(severity="Medium"))
-        total_low = len(all_vuln.filter(severity="Low"))
-        total_info = len(all_vuln.filter(severity="Informational"))
-        total_dup = len(all_vuln.filter(vuln_duplicate="Yes"))
-        total_vul = total_high + total_medium + total_low + total_info
-        WebScansDb.objects.filter(
-            scan_id=scan_id, organization=request.user.organization
-        ).update(
-            total_vul=total_vul,
-            high_vul=total_high,
-            medium_vul=total_medium,
-            low_vul=total_low,
-            info_vul=total_info,
-            total_dup=total_dup,
-        )
+        finding = mark_finding(request, WebScanResultsDb, WebScansDb)
         return HttpResponseRedirect(
-            reverse("webscanners:list_vuln_info")
-            + "?scan_id=%s&scan_name=%s" % (scan_id, vuln_name)
+            reverse("webscanners:list_vuln_info") + "?" + urlencode({
+                "scan_id": str(request.data["scan_id"]), "scan_name": finding.title,
+            })
         )
 
 
@@ -200,22 +145,7 @@ class WebScanDelete(APIView):
     def post(self, request):
         scan_id = request.POST.get("scan_id")
 
-        scan_item = str(scan_id)
-        value = scan_item.replace(" ", "")
-        value_split = value.split(",")
-        split_length = value_split.__len__()
-        # print "split_length", split_length
-        for i in range(0, split_length):
-            scan_id = value_split.__getitem__(i)
-
-            item = WebScansDb.objects.filter(
-                scan_id=scan_id, organization=request.user.organization
-            )
-            item.delete()
-            item_results = WebScanResultsDb.objects.filter(
-                scan_id=scan_id, organization=request.user.organization
-            )
-            item_results.delete()
+        delete_scans(str(scan_id).replace(" ", "").split(","), request.user.organization)
         return HttpResponseRedirect(reverse("webscanners:list_scans"))
 
 
@@ -271,7 +201,7 @@ class WebScanVulnList(APIView):
 
     def get(self, request):
         scan_id = request.GET["scan_id"]
-        all_vuln = WebScanResultsDb.objects.filter(scan_id=scan_id)
+        all_vuln = findings_for_scan(scan_id, request.user.organization)
         return render(
             request,
             "webscanners/scans/list_vuln.html",

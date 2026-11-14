@@ -1,0 +1,18 @@
+{% load reference_tags %}
+{% with entries=value|reference_items %}
+    {% if entries %}
+        <ul class="list-unstyled mb-0" style="overflow-wrap: anywhere;">
+            {% for entry in entries %}
+                <li class="mb-2">
+                    {% if entry.url %}
+                        <a href="{{ entry.url }}" target="_blank" rel="noopener noreferrer">{{ entry.text }}</a>
+                    {% else %}
+                        {{ entry.text }}
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted mb-0">No references provided.</p>
+    {% endif %}
+{% endwith %}

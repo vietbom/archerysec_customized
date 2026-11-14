@@ -31,6 +31,7 @@ from django.shortcuts import HttpResponseRedirect, render, reverse
 from django.utils.html import escape
 from lxml import etree
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import (AllowAny, BasePermission,
                                         IsAuthenticated)
@@ -55,6 +56,7 @@ from projects.models import MonthDb, ProjectDb
 from projects.serializers import (ProjectCreateSerializers,
                                   ProjectDataSerializers)
 from scanners.scanner_parser import scanner_parser
+from scanners.report_formats import ReportValidationError
 from scanners.scanner_parser.network_scanner import OpenVas_Parser
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from tools.models import NiktoResultDb
@@ -151,7 +153,8 @@ class UploadScanResult(APIView):
         return file_extension
 
     def web_result_data(self, scan_id, project_uu_id, scanner):
-        all_web_data = WebScanResultsDb.objects.filter(scan_id=scan_id)
+        all_web_data = WebScanResultsDb.objects.filter(scan_id=scan_id, vuln_status="Open").exclude(
+            false_positive__in=("Yes", "Duplicate")).exclude(vuln_duplicate="Yes")
         total_vul = len(all_web_data)
         total_critical = len(all_web_data.filter(severity="Critical"))
         total_high = len(all_web_data.filter(severity="High"))
@@ -174,10 +177,9 @@ class UploadScanResult(APIView):
         )
 
     def sast_result_data(self, scan_id, project_uu_id, scanner):
-        all_sast_data = StaticScanResultsDb.objects.filter(scan_id=scan_id)
-        total_vul = len(
-            all_sast_data.filter(severity__in=["Critical", "High", "Medium", "Low"])
-        )
+        all_sast_data = StaticScanResultsDb.objects.filter(scan_id=scan_id, vuln_status="Open").exclude(
+            false_positive__in=("Yes", "Duplicate")).exclude(vuln_duplicate="Yes")
+        total_vul = all_sast_data.count()
         total_critical = len(all_sast_data.filter(severity="Critical"))
         total_high = len(all_sast_data.filter(severity="High"))
         total_medium = len(all_sast_data.filter(severity="Medium"))
@@ -248,13 +250,23 @@ class UploadScanResult(APIView):
     def post(self, request, format=None):
         date_time = datetime.datetime.now()
         project_uu_id = request.data.get("project_id")
-        project = ProjectDb.objects.get(uu_id=project_uu_id)
+        key = OrgAPIKey.objects.get(api_key=request.META.get("HTTP_X_API_KEY"), is_active=True)
+        if request.user.is_authenticated and request.user.organization_id != key.organization_id:
+            raise PermissionDenied("The API key and signed-in user must belong to the same organization.")
+        organization = key.organization
+        from django.shortcuts import get_object_or_404
+        project = get_object_or_404(ProjectDb, uu_id=project_uu_id, organization=organization)
         project_id = project.id
         scanner = request.data.get("scanner")
         if isinstance(request.data.get("filename"), UploadedFile):
-            file = request.data.get("filename").read().decode("utf-8")
+            try:
+                file = request.data.get("filename").read().decode("utf-8-sig")
+            except UnicodeDecodeError:
+                raise ReportValidationError("Report must be UTF-8 encoded.")
         else:
             file = request.data.get("filename")
+        if not isinstance(file, str):
+            raise ReportValidationError("A report must be supplied in filename.")
 
         scan_url = request.data.get("scan_url")
         target = (
@@ -285,18 +297,21 @@ class UploadScanResult(APIView):
 
         # Put the data in memory
         if filetype == "XML" or filetype == "Nessus":
-            root_xml = ET.fromstring(file)
-            en_root_xml = ET.tostring(root_xml, encoding="utf8").decode(
-                "ascii", "ignore"
-            )
-            data = ET.fromstring(en_root_xml)
+            try:
+                root_xml = ET.fromstring(file)
+            except (ET.ParseError, ValueError):
+                raise ReportValidationError("Invalid XML report.")
+            data = root_xml
         elif filetype == "LXML":
             xml_dat = bytes(bytearray(file, encoding="utf-8"))
             data = etree.XML(xml_dat)
         elif filetype == "HTML":
             data = file
         elif filetype == "JSON":
-            data = json.loads(file)
+            try:
+                data = json.loads(file)
+            except (ValueError, TypeError):
+                raise ReportValidationError("Invalid JSON report.")
         elif filetype == "CSV":
             reader = csv.DictReader(io.StringIO(file))
             data = [line for line in reader]
@@ -335,6 +350,7 @@ class UploadScanResult(APIView):
                     project_id=project_id,
                     scan_status=scan_status,
                     scanner=db_name,
+                    organization=organization,
                 )
             elif db_type == "StaticScans":
                 return_func = self.sast_result_data
@@ -344,6 +360,7 @@ class UploadScanResult(APIView):
                     project_id=project_id,
                     scan_status=scan_status,
                     scanner=db_name,
+                    organization=organization,
                 )
             elif db_type == "NetworkScan":
                 return_func = self.network_result_data

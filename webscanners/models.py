@@ -76,6 +76,10 @@ class WebScanResultsDb(models.Model):
     class Meta:
         db_table = "webscanResultsdb"
         verbose_name_plural = "Web Scan Result Data"
+        constraints = [models.UniqueConstraint(
+            fields=("organization", "project", "scanner", "identity_hash"),
+            condition=~models.Q(identity_hash=""), name="unique_web_finding_identity",
+        )]
 
     vuln_id = models.UUIDField(blank=True)
     scan_id = models.UUIDField(blank=True)
@@ -96,6 +100,7 @@ class WebScanResultsDb(models.Model):
     jira_ticket = models.TextField(null=True, blank=True)
     vuln_status = models.TextField(null=True, blank=True)
     dup_hash = models.TextField(null=True, blank=True)
+    identity_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
     note = models.TextField(null=True, blank=True)
     vuln_duplicate = models.TextField(null=True, blank=True)
     false_positive_hash = models.TextField(null=True, blank=True)
@@ -122,6 +127,16 @@ class WebScanResultsDb(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class WebScanFinding(models.Model):
+    """A canonical finding can occur in several uploaded reports."""
+
+    scan = models.ForeignKey(WebScansDb, on_delete=models.CASCADE, related_name="finding_links")
+    finding = models.ForeignKey(WebScanResultsDb, on_delete=models.CASCADE, related_name="scan_links")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("scan", "finding"), name="unique_web_scan_finding")]
 
 
 class cookie_db(models.Model):

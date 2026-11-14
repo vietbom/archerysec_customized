@@ -1,0 +1,199 @@
+[
+  {
+    "name": "gitleaks",
+    "scanner": "gitleaks",
+    "report": [
+      {
+        "RuleID": "A",
+        "File": "A.env",
+        "StartLine": 1,
+        "Fingerprint": "commit:A.env:A:1"
+      }
+    ],
+    "expected_hash": "d2bdef55df3b5b9682108c1f3a95df5f6ba7c0944f0485b62bf5a40c52061a19"
+  },
+  {
+    "name": "semgrepscan",
+    "scanner": "semgrepscan",
+    "report": {
+      "results": [
+        {
+          "check_id": "A",
+          "path": "A.js",
+          "start": {
+            "line": 1,
+            "col": 1
+          },
+          "end": {
+            "line": 2,
+            "col": 4
+          },
+          "extra": {
+            "message": "A",
+            "severity": "ERROR",
+            "metadata": {},
+            "lines": "eval(input)"
+          }
+        }
+      ],
+      "errors": []
+    },
+    "expected_hash": "4c5bcdcb7619b900ad232820da5faf0feb43130ef3b50e836bb5e8782259be07"
+  },
+  {
+    "name": "trivy",
+    "scanner": "trivy",
+    "report": {
+      "SchemaVersion": 2,
+      "ArtifactType": "container_image",
+      "ArtifactName": "app:build1",
+      "Results": [
+        {
+          "Target": "app:build1",
+          "Class": "os-pkgs",
+          "Type": "alpine",
+          "Vulnerabilities": [
+            {
+              "VulnerabilityID": "A",
+              "PkgName": "lib-A",
+              "InstalledVersion": "1",
+              "FixedVersion": "2",
+              "Title": "A",
+              "Description": "A",
+              "Severity": "HIGH"
+            }
+          ]
+        }
+      ]
+    },
+    "expected_hash": "4ec9fe17a3879dbc6e45b5f9e85bfb34a6902d7f1b8f7d7d74b0b889a96a910d"
+  },
+  {
+    "name": "trivy:secret",
+    "scanner": "trivy",
+    "report": {
+      "SchemaVersion": 2,
+      "ArtifactType": "filesystem",
+      "ArtifactName": ".",
+      "Results": [
+        {
+          "Target": "app.env",
+          "Class": "secret",
+          "Secrets": [
+            {
+              "RuleID": "A",
+              "Title": "A",
+              "Category": "test",
+              "Severity": "HIGH",
+              "StartLine": 65,
+              "EndLine": 65,
+              "Match": "A"
+            }
+          ]
+        }
+      ]
+    },
+    "expected_hash": "1b50a4e14c7cad15549a62168ff79998d50f53601d4557e42e66284b79947575"
+  },
+  {
+    "name": "trivy:config",
+    "scanner": "trivy",
+    "report": {
+      "SchemaVersion": 2,
+      "ArtifactType": "filesystem",
+      "ArtifactName": ".",
+      "Results": [
+        {
+          "Target": "Dockerfile",
+          "Class": "config",
+          "Misconfigurations": [
+            {
+              "ID": "A",
+              "Title": "A",
+              "Description": "A",
+              "Message": "A",
+              "Resolution": "Fix it",
+              "References": [],
+              "Severity": "HIGH",
+              "CauseMetadata": {
+                "StartLine": 1,
+                "EndLine": 1,
+                "Code": {
+                  "Lines": []
+                },
+                "Resource": "A",
+                "Provider": "docker"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "expected_hash": "48e76183594444ef288cad0c718a5773520c79ac6ecb402acaa53d66c4a3bafc"
+  },
+  {
+    "name": "zap_scan",
+    "scanner": "zap_scan",
+    "report": "<OWASPZAPReport><site name=\"https://app.test\"><alerts><alertitem><pluginid>A</pluginid><alertRef>A</alertRef><alert>A</alert><name>A</name><riskcode>3</riskcode><desc>Initial description</desc><solution>Fix it</solution><reference>https://example.test/advisory</reference><instances><instance><uri>https://app.test/A</uri><method>GET</method></instance></instances></alertitem></alerts></site></OWASPZAPReport>",
+    "expected_hash": "95bb37054d402a2644e9336c7233216d8f057355fb8117ec8215642e0afc024b"
+  },
+  {
+    "name": "gitleaks-no-native-id",
+    "scanner": "gitleaks",
+    "report": [
+      {
+        "RuleID": "A",
+        "File": "A.env",
+        "StartLine": 1,
+        "Commit": "abc123"
+      }
+    ],
+    "expected_hash": "edba25af4472a9446d7154a0be9686bb4915aa4315338f625f63aeb54bf0bab2"
+  },
+  {
+    "name": "semgrep-info",
+    "scanner": "semgrepscan",
+    "report": {
+      "results": [
+        {
+          "check_id": "A",
+          "path": "A.js",
+          "start": {
+            "line": 1,
+            "col": 1
+          },
+          "end": {
+            "line": 2,
+            "col": 4
+          },
+          "extra": {
+            "message": "A",
+            "severity": "INFO",
+            "metadata": {},
+            "lines": "eval(input)"
+          }
+        }
+      ],
+      "errors": []
+    },
+    "expected_hash": "b8b8f01875d04bdc2290fa689d567a9fd2dc8e277bb553b8e280f807673a4496"
+  },
+  {
+    "name": "zap-info",
+    "scanner": "zap_scan",
+    "report": "<OWASPZAPReport><site name=\"https://app.test\"><alerts><alertitem><pluginid>A</pluginid><alertRef>A</alertRef><alert>A</alert><name>A</name><riskcode>0</riskcode><desc>Initial description</desc><solution>Fix it</solution><reference>https://example.test/advisory</reference><instances><instance><uri>https://app.test/A</uri><method>GET</method></instance></instances></alertitem></alerts></site></OWASPZAPReport>",
+    "expected_hash": "071f5cd9a7ea985629a743ce84c2aaf11e7aa96c1a5258a63885d25b83505738"
+  },
+  {
+    "name": "zap-nested-reference",
+    "scanner": "zap_scan",
+    "report": "<OWASPZAPReport><site name=\"https://app.test\"><alerts><alertitem><pluginid>A</pluginid><alertRef>A</alertRef><alert>A</alert><name>A</name><riskcode>3</riskcode><desc>Initial description</desc><solution>Fix it</solution><reference><a href=\"https://example.test/advisory\">Advisory</a></reference><instances><instance><uri>https://app.test/A</uri><method>GET</method></instance></instances></alertitem></alerts></site></OWASPZAPReport>",
+    "expected_hash": "5214dc552d3676dedc4523e9c24f8735c40c1a93ef52d1997f6e1cf143c2162e"
+  },
+  {
+    "name": "zap-cdata-instance",
+    "scanner": "zap_scan",
+    "report": "<OWASPZAPReport><site name=\"https://app.test\"><alerts><alertitem><pluginid>A</pluginid><alertRef>A</alertRef><alert>A</alert><name>A</name><riskcode>3</riskcode><desc>Initial description</desc><solution>Fix it</solution><reference>https://example.test/advisory</reference><instances><instance><uri>https://app.test/A</uri><method>GET</method><evidence><![CDATA[<b>sample</b>]]></evidence></instance></instances></alertitem></alerts></site></OWASPZAPReport>",
+    "expected_hash": "adea2cbdabe2301ded2e8722dc0dea007de24bb9de840499fcc6e77da0b492da"
+  }
+]

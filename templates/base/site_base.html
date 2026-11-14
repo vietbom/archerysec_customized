@@ -21,7 +21,6 @@
           href="{% static 'matrix-admin-bt4/assets/libs/select2/dist/css/select2.min.css' %}">
     <link rel="stylesheet"
           href="{% static 'css/bootstrap-select.min.css' %}">
-    <script src="{% static 'js/bootstrap-select.min.js' %}"></script>
     <link rel="stylesheet" type="text/css"
           href="{% static 'matrix-admin-bt4/assets/extra-libs/multicheck/multicheck.css' %}">
     <link href="{% static 'matrix-admin-bt4/assets/libs/datatables.net-bs4/css/dataTables.bootstrap4-custom.css' %}"
@@ -34,6 +33,7 @@
           rel="stylesheet">
     <link rel="stylesheet" type="text/css"
           href="{% static 'matrix-admin-bt4/assets/libs/bootstrap-datepicker/dist/css/bootstrap-datepicker.min.css' %}">
+    <link href="{% static 'archerysecurity/css/notifications.css' %}" rel="stylesheet">
     {% block extra_css %}{% endblock %}
 </head>
 
@@ -64,6 +64,7 @@
 <script src="{% static 'matrix-admin-bt4/assets/libs/popper.js/dist/umd/popper.min.js' %}"></script>
 <script src="{% static 'matrix-admin-bt4/assets/libs/toastr/build/toastr.min.js' %}"></script>
 <script src="{% static 'matrix-admin-bt4/assets/libs/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+<script src="{% static 'js/bootstrap-select.min.js' %}"></script>
 <script src="{% static 'matrix-admin-bt4/assets/libs/perfect-scrollbar/dist/perfect-scrollbar.jquery.min.js' %}"></script>
 <script src="{% static 'matrix-admin-bt4/assets/extra-libs/sparkline/sparkline.js' %}"></script>
 <script src="{% static 'matrix-admin-bt4/dist/js/waves.js' %}"></script>
@@ -83,9 +84,12 @@
     /****************************************
      *       Basic Table                   *
      ****************************************/
+    if ($('#data_table').length) {
     let data_table = $('#data_table').DataTable();
     new $.fn.dataTable.SearchBuilder(data_table, {});
     data_table.searchBuilder.container().prependTo(data_table.table().container());
+
+    }
 
     $(".select2").select2();
 
@@ -110,5 +114,6 @@
         {% endif %}
     });
 </script>
+<script src="{% static 'archerysecurity/js/notifications.js' %}" defer></script>
 </body>
 </html>

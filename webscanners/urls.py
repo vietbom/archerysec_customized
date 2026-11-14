@@ -18,6 +18,8 @@ from django.urls import include, path
 
 from webscanners import views, web_views
 
+from common.notification_views import dismiss_notification, dismiss_all_notifications
+
 app_name = "webscanners"
 
 urlpatterns = [
@@ -38,8 +40,8 @@ urlpatterns = [
         web_views.WebScanScheduleDelete.as_view(),
         name="del_web_scan_schedule",
     ),
-    path("del_notify/", web_views.DeleteNotify.as_view(), name="del_notify"),
-    path("del_all_notify/", web_views.DeleteAllNotify.as_view(), name="del_all_notify"),
+    path("del_notify/", dismiss_notification, name="del_notify"),
+    path("del_all_notify/", dismiss_all_notifications, name="del_all_notify"),
     # Dynamic scans
     path("list_vuln/", views.WebScanVulnList.as_view(), name="list_vuln"),
     path("list_scans/", views.WebScanList.as_view(), name="list_scans"),

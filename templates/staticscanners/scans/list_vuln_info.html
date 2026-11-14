@@ -47,7 +47,7 @@ $(document).on('click', '.confirm-delete', function(){
     <div class="col-md-12">
         <div class="card">
             <div class="card-body">
-                {% if user.is_superuser == True or user.role.id == 2 %}
+                {% if user.is_superuser or user.role.role == "Admin" or user.role.role == "Analyst" %}
                 <div class="float-right">
                     <button type="button" class="btn btn-danger btn-mini" onclick="">Delete Selected</button>
                 </div>
@@ -71,7 +71,7 @@ $(document).on('click', '.confirm-delete', function(){
                                 <th>Risk</th>
                                 <th>JIRA Ticket</th>
                                 <th>Status</th>
-                                {% if user.is_superuser == True or user.role.id == 2 %}
+                                {% if user.is_superuser or user.role.role == "Admin" or user.role.role == "Analyst" %}
                                 <th>False Positive</th>
                                 <th>Delete</th>
                                 <th>Mark</th>
@@ -108,13 +108,13 @@ $(document).on('click', '.confirm-delete', function(){
                                        data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                     {% endif %}
                                 </td>
-                                {% if user.is_superuser == True or user.role.id == 2 %}
+                                {% if user.is_superuser or user.role.role == "Admin" or user.role.role == "Analyst" %}
                                 {% if data.false_positive == 'No' %}
                                 <td>
                                     <button class="btn btn-outline-info btn-mini" data-toggle="modal"
-                                            data-target="#commentModal">Yes
+                                            data-target="#commentModal-{{ data.vuln_id }}">Yes
                                     </button>
-                                    <div class="modal fade" id="commentModal" tabindex="-1" role="dialog"
+                                    <div class="modal fade" id="commentModal-{{ data.vuln_id }}" tabindex="-1" role="dialog"
                                          aria-labelledby="commentModalLabel"
                                          aria-hidden="true">
                                         <div class="modal-dialog" role="document">
@@ -153,9 +153,9 @@ $(document).on('click', '.confirm-delete', function(){
                                 <td>
 
                                     <button class="btn btn-outline-info btn-mini" data-toggle="modal"
-                                            data-target="#commentNoModal">No
+                                            data-target="#commentNoModal-{{ data.vuln_id }}">No
                                     </button>
-                                    <div class="modal fade" id="commentNoModal" tabindex="-1" role="dialog" aria-labelledby="commentModalLabel"
+                                    <div class="modal fade" id="commentNoModal-{{ data.vuln_id }}" tabindex="-1" role="dialog" aria-labelledby="commentModalLabel"
                                          aria-hidden="true">
                                         <div class="modal-dialog" role="document">
                                             <div class="modal-content">
@@ -206,9 +206,9 @@ $(document).on('click', '.confirm-delete', function(){
                                 {% if data.vuln_status == 'Open' %}
                                 <td>
                                     <button class="btn btn-outline-info btn-mini" data-toggle="modal"
-                                            data-target="#commentCloseModal">Close
+                                            data-target="#commentCloseModal-{{ data.vuln_id }}">Close
                                     </button>
-                                    <div class="modal fade" id="commentCloseModal" tabindex="-1" role="dialog" aria-labelledby="ClosecommentModalLabel"
+                                    <div class="modal fade" id="commentCloseModal-{{ data.vuln_id }}" tabindex="-1" role="dialog" aria-labelledby="ClosecommentModalLabel"
                                          aria-hidden="true">
                                         <div class="modal-dialog" role="document">
                                             <div class="modal-content">
@@ -241,9 +241,9 @@ $(document).on('click', '.confirm-delete', function(){
                                 {% if data.vuln_status == 'Closed' %}
                                 <td>
                                     <button class="btn btn-outline-info btn-mini" data-toggle="modal"
-                                            data-target="#commentOpenModal">Open
+                                            data-target="#commentOpenModal-{{ data.vuln_id }}">Open
                                     </button>
-                                    <div class="modal fade" id="commentOpenModal" tabindex="-1" role="dialog" aria-labelledby="ClosecommentModalLabel"
+                                    <div class="modal fade" id="commentOpenModal-{{ data.vuln_id }}" tabindex="-1" role="dialog" aria-labelledby="ClosecommentModalLabel"
                                          aria-hidden="true">
                                         <div class="modal-dialog" role="document">
                                             <div class="modal-content">

@@ -83,8 +83,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
-                                 data-parent="#accordionExample">
+                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne">
                                 <div class="card-body">
                                     {{ data.description | striptags }}
                                 </div>
@@ -102,8 +101,7 @@
                             </div>
 
                             {% if data.scanner == 'Zap' %}
-                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
-                                     data-parent="#accordionExample">
+                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
                                     <div class="card-body">
                                         <div class="card-body">
                                             <table class="table table-bordered">
@@ -113,8 +111,7 @@
                                     </div>
                                 </div>
                             {% elif data.scanner == 'Arachni' %}
-                                <div id="collapseFour" class="collapse" aria-labelledby="headingTwo"
-                                     data-parent="#accordionExample">
+                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
                                     <div class="card-body">
                                         <div class="card-body">
                                             <table class="table table-bordered">
@@ -125,8 +122,7 @@
                                 </div>
 
                             {% elif data.scanner == 'Acunetix' %}
-                                <div id="collapseFive" class="collapse" aria-labelledby="headingTwo"
-                                     data-parent="#accordionExample">
+                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
                                     <div class="card-body">
                                         <div class="card-body">
                                             {#                                            <table class="table table-bordered">#}
@@ -138,8 +134,7 @@
                                 </div>
                             {% else %}
 
-                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
-                                     data-parent="#accordionExample">
+                                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
                                     <div class="card-body">
                                         <div class="col-md-6">
                                             <table class="table table-bordered data-table table-fixed">
@@ -173,8 +168,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree"
-                                 data-parent="#accordionExample">
+                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree">
                                 <div class="card-body">
                                     {{ data.solution | striptags }}
                                 </div>
@@ -190,10 +184,9 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapse4" class="collapse" aria-labelledby="heading4"
-                                 data-parent="#accordionExample">
+                            <div id="collapse4" class="collapse" aria-labelledby="heading4">
                                 <div class="card-body">
-                                    {{ data.reference }}
+                                    {% include "base/_references.html" with value=data.reference %}
                                 </div>
                             </div>
                         </div>

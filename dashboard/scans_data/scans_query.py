@@ -221,7 +221,7 @@ def _static_finding_count(project_id, query):
     result_qs = StaticScanResultsDb.objects.filter(
         project__uu_id=project_id,
         vuln_status="Open",
-    ).exclude(false_positive="Yes").exclude(vuln_status="Duplicate")
+    ).exclude(false_positive__in=("Yes", "Duplicate")).exclude(vuln_duplicate="Yes")
 
     if query == "total":
         return result_qs.count()
@@ -923,85 +923,22 @@ def all_vuln_count(project_id, query):
 
 
 def all_vuln_count_data(project_id, query):
-    all_data = 0
-
-    if query == "false":
-        web_false_positive = WebScanResultsDb.objects.filter(
-            false_positive="Yes", project__uu_id=project_id
-        )
-
-        sast_false_positive = StaticScanResultsDb.objects.filter(
-            false_positive="Yes", project__uu_id=project_id
-        )
-
-        cloud_false_positive = CloudScansResultsDb.objects.filter(
-            false_positive="Yes", project__uu_id=project_id
-        )
-
-        net_false_positive = NetworkScanResultsDb.objects.filter(
-            false_positive="Yes", project__uu_id=project_id
-        )
-
-        all_data = (
-            int(len(web_false_positive))
-            + int(len(sast_false_positive))
-            + int(len(cloud_false_positive))
-            + int(len(net_false_positive))
-        )
-
-    elif query == "Closed":
-        web_closed_vuln = WebScanResultsDb.objects.filter(
-            vuln_status="Closed", project__uu_id=project_id
-        )
-
-        net_closed_vuln = NetworkScanResultsDb.objects.filter(
-            vuln_status="Closed", project__uu_id=project_id
-        )
-
-        sast_closed_vuln = StaticScanResultsDb.objects.filter(
-            vuln_status="Closed", project__uu_id=project_id
-        )
-
-        cloud_closed_vuln = CloudScansResultsDb.objects.filter(
-            vuln_status="Closed", project__uu_id=project_id
-        )
-
-        pentest_closed_vuln = PentestScanResultsDb.objects.filter(
-            vuln_status="Closed", project__uu_id=project_id
-        )
-        all_data = (
-            int(len(web_closed_vuln))
-            + int(len(net_closed_vuln))
-            + int(len(sast_closed_vuln))
-            + int(len(cloud_closed_vuln))
-            + int(len(pentest_closed_vuln))
-        )
-
-    elif query == "Open":
-        web_open_vuln = WebScanResultsDb.objects.filter(
-            vuln_status="Open", project__uu_id=project_id
-        )
-        net_open_vuln = NetworkScanResultsDb.objects.filter(
-            vuln_status="Open", project__uu_id=project_id
-        )
-        sast_open_vuln = StaticScanResultsDb.objects.filter(
-            vuln_status="Open", project__uu_id=project_id
-        )
-
-        cloud_open_vuln = CloudScansResultsDb.objects.filter(
-            vuln_status="Open", project__uu_id=project_id
-        )
-
-        pentest_open_vuln = PentestScanResultsDb.objects.filter(
-            vuln_status="Open", project__uu_id=project_id
-        )
-        # add your scanner name here <scannername>
-        all_data = (
-            int(len(web_open_vuln))
-            + int(len(net_open_vuln))
-            + int(len(sast_open_vuln))
-            + int(len(cloud_open_vuln))
-            + int(len(pentest_open_vuln))
-        )
-
-    return all_data
+    models = (WebScanResultsDb, StaticScanResultsDb, CloudScansResultsDb,
+              NetworkScanResultsDb)
+    total = 0
+    for model in models:
+        findings = model.objects.filter(project__uu_id=project_id)
+        if query == "false":
+            findings = findings.filter(false_positive="Yes")
+        elif query in ("Open", "Closed"):
+            findings = findings.filter(vuln_status=query).exclude(
+                false_positive__in=("Yes", "Duplicate")
+            ).exclude(vuln_duplicate="Yes")
+        else:
+            return 0
+        total += findings.count()
+    if query in ("Open", "Closed"):
+        total += PentestScanResultsDb.objects.filter(
+            project__uu_id=project_id, vuln_status=query
+        ).count()
+    return total

@@ -17,10 +17,12 @@
 from django.urls import include, path
 
 from dashboard import views
+from common.notification_views import notification_feed
 
 app_name = "dashboard"
 
 urlpatterns = [
+    path("notifications/", notification_feed, name="notification_feed"),
     path("", views.dashboard, name="dashboard"),
     path("dashboard/", views.dashboard, name="dashboard"),
     path("project_dashboard/", views.project_dashboard, name="project_dashboard"),

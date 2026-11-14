@@ -1,159 +1,31 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
-
 {% block body_class %}dashboard-home{% endblock %}
-
 {% block body %}
-{#    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.css" rel="stylesheet">#}
-
-        <div class="row" style="margin-bottom: 20px;">
-            <div class="col-12">
-                <div class="alert alert-info" style="background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <h3 class="text-center" style="margin-top: 0; font-weight: bold;">ĐỒ ÁN TỐT NGHIỆP ĐẠI HỌC - NĂM 2026</h3>
-                    <h4 class="text-center" style="margin-bottom: 10px;">XÂY DỰNG HỆ THỐNG GIÁM SÁT BỀ MẶT TẤN CÔNG (ATTACK SURFACE MANAGEMENT)</h4>
-                    <div class="text-center" style="font-size: 16px;">
-                        <strong>Sinh viên thực hiện:</strong> Nguyễn Đức Việt (AT190256)<br>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {% if total_count_project.total_vuln__sum >= 0 %}
-            <div class="row dashboard-stat-grid">
-                <!-- Column -->
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--total">
-                        <div class="box bg-danger text-center">
-                            <h1 class="font-light text-white">{{ total_count_project.total_vuln__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=All"><h6
-                                    class="text-white"> Total</h6></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Column -->
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--false-positive">
-                        <div class="box bg-warning text-center">
-                            <h1 class="font-light text-white">{{ false_count_project.total_false__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=All_False_Positive">
-                                <h6 class="text-white">False Positive</h6></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Column -->
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--closed">
-                        <div class="box bg-cyan text-center">
-                            <h1 class="font-light text-white">{{ close_count_project.total_close__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=All_Closed"><h6
-                                    class="text-white">Total Closed</h6></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Column -->
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--infrastructure">
-                        <div class="box bg-info text-center">
-                            <h1 class="font-light text-white">{{ net_count_project.total_net__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Network"><h6
-                                    class="text-white"> Infrastructure Issues</h6></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Column -->
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--web">
-                        <div class="box bg-success text-center">
-                            <h1 class="font-light text-white">{{ web_count_project.total_web__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Web"><h6
-                                    class="text-white">Web Issues</h6></a>
-                        </div>
-                    </div>
-                </div>
-                <!-- Column -->
-                <!-- Column -->
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--static">
-                        <div class="box bg-cyan  text-center">
-                            <h1 class="font-light text-white">{{ static_count_project.total_static__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Static"><h6
-                                    class="text-white">Static Issues</h6></a>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6 col-lg-2 col-xlg-3">
-                    <div class="card card-hover dashboard-stat-card dashboard-stat-card--cloud">
-                        <div class="box bg-dark text-center">
-                            <h1 class="font-light text-white">{{ cloud_count_project.total_cloud__sum }}</h1>
-                            <a href="{% url 'dashboard:all_high_vuln' %}?project_id=none&severity=Cloud"><h6
-                                    class="text-white">Cloud Issues</h6></a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col">
-                    <div class="card dashboard-chart-card dashboard-chart-card--trend">
-                        <div class="card-body">
-                            <div class="d-md-flex align-items-center">
-                                <div>
-                                    <h4>Vulnerability Trending Year {{ current_year }}</h4>
-                                    <h5 class="card-subtitle"></h5>
-                                </div>
-                            </div>
-                            <canvas id="myChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="card dashboard-chart-card dashboard-chart-card--overview">
-                        <div class="card-body">
-                            <div class="d-md-flex align-items-center">
-                                <div>
-                                    <h3>Vulnerabilities</h3>
-                                    <h5 class="card-subtitle"></h5>
-                                </div>
-                            </div>
-                            <canvas id="pie"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row dashboard-chart-grid">
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card dashboard-chart-card dashboard-chart-card--web dashboard-chart-card--scanner">
-                        <div class="card-body">
-                            <h6>Web Vulnerabilities</h6>
-                            <canvas id="webpie"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card dashboard-chart-card dashboard-chart-card--network dashboard-chart-card--scanner">
-                        <div class="card-body">
-                            <h6>Network Vulnerabilities</h6>
-                            <canvas id="networkpie"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card dashboard-chart-card dashboard-chart-card--static dashboard-chart-card--scanner">
-                        <div class="card-body">
-                            <h6>Static Vulnerabilities</h6>
-                            <canvas id="staticpie"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6 col-xl-3">
-                    <div class="card dashboard-chart-card dashboard-chart-card--cloud dashboard-chart-card--scanner">
-                        <div class="card-body">
-                            <h6>Cloud Issues</h6>
-                            <canvas id="cloudpie"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
+<header class="dashboard-heading">
+    <div><span class="dashboard-eyebrow">ATTACK SURFACE MANAGEMENT</span><h1>Security overview</h1>
+        <p>Monitor exposure, prioritize findings and track remediation across projects.</p></div>
+    <span class="dashboard-scope"><i class="fas fa-layer-group" aria-hidden="true"></i> {{ all_project|length }} projects</span>
+</header>
+<details class="dashboard-about"><summary>About this graduation project</summary>
+    <p>ĐỒ ÁN TỐT NGHIỆP ĐẠI HỌC - NĂM 2026<br>Xây dựng hệ thống giám sát bề mặt tấn công (Attack Surface Management)<br>Nguyễn Đức Việt - AT190256</p>
+</details>
+<div class="dashboard-stat-grid">
+{% include "dashboard/_stat_card.html" with count=total_count_project.total_vuln__sum label="Open findings" severity="All" tone="neutral" caption="Across all projects" %}
+{% include "dashboard/_stat_card.html" with count=critical_count_project.total_critical__sum label="Critical" severity="Critical" tone="critical" caption="Highest priority" %}
+{% include "dashboard/_stat_card.html" with count=high_count_project.total_high__sum label="High" severity="High" tone="high" caption="Needs attention" %}
+{% include "dashboard/_stat_card.html" with count=close_count_project.total_close__sum label="Closed" severity="All_Closed" tone="closed" caption="Remediated findings" %}
+{% include "dashboard/_stat_card.html" with count=false_count_project.total_false__sum label="False Positive" severity="All_False_Positive" tone="muted" caption="Excluded from open findings" %}
+</div>
+<div class="dashboard-overview-grid">
+<section class="card dashboard-chart-card"><div class="card-body"><h2>Vulnerability trend</h2><p class="dashboard-description">Open findings by month - {{ current_year }}</p><div class="dashboard-chart-frame"><canvas id="myChart" role="img" aria-label="Vulnerability trend"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><h2>Severity distribution</h2><p class="dashboard-description">Prioritize the most severe findings first</p><div class="dashboard-chart-frame"><canvas id="pie" role="img" aria-label="Severity distribution"></canvas></div></div></section>
+</div><div class="dashboard-section-heading"><h2>Exposure by source</h2><span>Open findings by severity</span></div><div class="dashboard-source-grid">
+<section class="card dashboard-chart-card"><div class="card-body"><div class="dashboard-source-heading"><h3>Web</h3><strong>{{ web_count_project.total_web__sum|default:0 }}</strong></div><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="webpie" role="img" aria-label="Web findings"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><div class="dashboard-source-heading"><h3>Infrastructure</h3><strong>{{ net_count_project.total_net__sum|default:0 }}</strong></div><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="networkpie" role="img" aria-label="Infrastructure findings"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><div class="dashboard-source-heading"><h3>Static & dependencies</h3><strong>{{ static_count_project.total_static__sum|default:0 }}</strong></div><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="staticpie" role="img" aria-label="Static & dependencies findings"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><div class="dashboard-source-heading"><h3>Cloud</h3><strong>{{ cloud_count_project.total_cloud__sum|default:0 }}</strong></div><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="cloudpie" role="img" aria-label="Cloud findings"></canvas></div></div></section>
+</div>
             <div class="row dashboard-project-list-row">
                 <div class="col-md-12">
                     <div class="card dashboard-project-list-card">
@@ -161,13 +33,13 @@
 
 
                             <div class="float-right">
-                                {% if user.is_superuser == True or user.role.id == 2 %}
+                                {% if user.is_superuser or user.role.role == "Admin" or user.role.role == "Analyst" %}
                             <div class="btn-group" role="group" aria-label="Basic example">
                                 <a href="{% url 'report_upload:upload' %}" class="btn btn-primary btn-mini" data-toggle="tooltip" data-placement="top" title="Upload XML Report"><i
                                         class="fas fa-upload"></i> Upload </a>
                             </div>
                                 {% endif %}
-                                 {% if user.is_superuser == True %}
+                                 {% if user.is_superuser or user.role.role == "Admin" %}
                                 <div class="btn-group" role="group" aria-label="Basic example">
                                     <a href="{% url 'projects:project_create' %}" class="btn btn-primary btn-mini" data-toggle="tooltip" data-placement="top" title="Create New Project"><i
                         class="fas fa-plus-circle"></i> Add Project</a>
@@ -177,17 +49,17 @@
 
                             <div class="d-md-flex align-items-center">
                                 <div>
-                                    <h1>Project List</h1>
+                                    <h2>Projects</h2>
                                     <h5 class="card-subtitle"></h5>
                                 </div>
                             </div>
-                            <br>
-                            <br>
+
+
                             <div class="row">
                                 <!-- column -->
 
                                 <div class="table-responsive">
-                                    <table id="data_table" class="table table-bordered data-table">
+                                    <table id="data_table" class="table table-hover data-table">
                                         <thead>
                                         <tr>
                                             <th>Project</th>
@@ -245,8 +117,8 @@
                 </div>
             </div>
 
-    <script src="{% static 'js/Chart.js' %}"></script>
     <script src="{% static 'js/Chart.min.js' %}"></script>
+<script src="{% static 'archerysecurity/js/dashboard-charts.js' %}"></script>
     <script>
 
         var months = [
@@ -264,47 +136,47 @@
         var myChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: [{% for data in all_month_data_display %}monthNumToName({{ data.month }}),{% endfor %}],
+                labels: [{% for data in all_month_data_display %}monthNumToName({{ data.month|default:0 }}),{% endfor %}],
                 datasets: [{
                     label: 'Critical',
-                    data: [{% for data in all_month_data_display %}{{ data.critical }},{% endfor %}],
+                    data: [{% for data in all_month_data_display %}{{ data.critical|default:0 }},{% endfor %}],
                     backgroundColor: [
-                        'rgb(121, 5, 5)',
+                        '#9f1239',
                     ],
                     borderColor: [
-                        'rgb(121, 5, 5)',
+                        '#9f1239',
                     ],
                     fill: false,
                 },{
                     label: 'High',
-                    data: [{% for data in all_month_data_display %}{{ data.high }},{% endfor %}],
+                    data: [{% for data in all_month_data_display %}{{ data.high|default:0 }},{% endfor %}],
                     backgroundColor: [
-                        'rgb(219,  85, 101)',
+                        '#ef4444',
                     ],
                     borderColor: [
-                        'rgb(219,  85, 101)',
+                        '#ef4444',
                     ],
                     fill: false,
                 }, {
                     label: 'Medium',
-                    data: [{% for data in all_month_data_display %}{{ data.medium }},{% endfor %}],
+                    data: [{% for data in all_month_data_display %}{{ data.medium|default:0 }},{% endfor %}],
                     backgroundColor: [
 
-                        'rgb(255, 159, 64)',
+                        '#f59e0b',
                     ],
                     borderColor: [
 
-                        'rgb(255, 159, 64)',
+                        '#f59e0b',
                     ],
                     fill: false,
                 }, {
                     label: 'Low',
-                    data: [{% for data in all_month_data_display %}{{ data.low }},{% endfor %}],
+                    data: [{% for data in all_month_data_display %}{{ data.low|default:0 }},{% endfor %}],
                     backgroundColor: [
-                        'rgb(54, 162, 235)',
+                        '#0ea5e9',
                     ],
                     borderColor: [
-                        'rgb(54, 162, 235)',
+                        '#0ea5e9',
                     ],
                     fill: false,
                 }
@@ -313,7 +185,8 @@
             options: {
                 scales: {
                     yAxes: [{
-                        stacked: true
+                        stacked: false,
+                        ticks: {beginAtZero: true, precision: 0}
                     }]
                 }
             }
@@ -324,12 +197,12 @@
             data: {
                 datasets: [{
                     data: [
-                        {{ critical_count_project.total_critical__sum }},
-                        {{ high_count_project.total_high__sum }},
-                        {{ medium_count_project.total_medium__sum }},
-                        {{ low_count_project.total_low__sum }}
+                        {{ critical_count_project.total_critical__sum|default:0 }},
+                        {{ high_count_project.total_high__sum|default:0 }},
+                        {{ medium_count_project.total_medium__sum|default:0 }},
+                        {{ low_count_project.total_low__sum|default:0 }}
                     ], backgroundColor: [
-                        'rgb(121, 5, 5)', 'rgb(219,  85, 101)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
 
                     ],
                 }],
@@ -346,16 +219,16 @@
 
         var ctx = document.getElementById('webpie').getContext('2d');
         var webpie = new Chart(ctx, {
-            type: 'pie',
+            type: 'horizontalBar',
             data: {
                 datasets: [{
                     data: [
-                        {{critical_web_count_project.critical_web__sum}},
-                        {{high_web_count_project.high_web__sum}},
-                        {{medium_web_count_project.medium_web__sum}},
-                        {{low_web_count_project.low_web__sum}}
+                        {{ critical_web_count_project.critical_web__sum|default:0 }},
+                        {{ high_web_count_project.high_web__sum|default:0 }},
+                        {{ medium_web_count_project.medium_web__sum|default:0 }},
+                        {{ low_web_count_project.low_web__sum|default:0 }}
                     ], backgroundColor: [
-                        'rgb(121, 5, 5)', 'rgb(219,  85, 101)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
 
                     ],
                 }],
@@ -371,16 +244,16 @@
         });
         var ctx = document.getElementById('networkpie').getContext('2d');
         var networkpie = new Chart(ctx, {
-            type: 'pie',
+            type: 'horizontalBar',
             data: {
                 datasets: [{
                     data: [
-                        {{critical_net_count_project.critical_net__sum}},
-                        {{high_net_count_project.high_net__sum}},
-                        {{medium_net_count_project.medium_net__sum}},
-                        {{low_net_count_project.low_net__sum}}
+                        {{ critical_net_count_project.critical_net__sum|default:0 }},
+                        {{ high_net_count_project.high_net__sum|default:0 }},
+                        {{ medium_net_count_project.medium_net__sum|default:0 }},
+                        {{ low_net_count_project.low_net__sum|default:0 }}
                     ], backgroundColor: [
-                        'rgb(121, 5, 5)', 'rgb(219,  85, 101)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
 
                     ],
                 }],
@@ -396,16 +269,16 @@
         });
         var ctx = document.getElementById('staticpie').getContext('2d');
         var staticpie = new Chart(ctx, {
-            type: 'pie',
+            type: 'horizontalBar',
             data: {
                 datasets: [{
                     data: [
-                        {{critical_static_count_project.critical_static__sum}},
-                        {{high_static_count_project.high_static__sum}},
-                        {{medium_static_count_project.medium_static__sum}},
-                        {{low_static_count_project.low_static__sum}}
+                        {{ critical_static_count_project.critical_static__sum|default:0 }},
+                        {{ high_static_count_project.high_static__sum|default:0 }},
+                        {{ medium_static_count_project.medium_static__sum|default:0 }},
+                        {{ low_static_count_project.low_static__sum|default:0 }}
                     ], backgroundColor: [
-                        'rgb(121, 5, 5)', 'rgb(219,  85, 101)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
 
                     ],
                 }],
@@ -421,16 +294,16 @@
         });
         var ctx = document.getElementById('cloudpie').getContext('2d');
         var staticpie = new Chart(ctx, {
-            type: 'pie',
+            type: 'horizontalBar',
             data: {
                 datasets: [{
                     data: [
-                        {{critical_cloud_count_project.critical_cloud__sum}},
-                        {{high_cloud_count_project.high_cloud__sum}},
-                        {{medium_cloud_count_project.medium_cloud__sum}},
-                        {{low_cloud_count_project.low_cloud__sum}}
+                        {{ critical_cloud_count_project.critical_cloud__sum|default:0 }},
+                        {{ high_cloud_count_project.high_cloud__sum|default:0 }},
+                        {{ medium_cloud_count_project.medium_cloud__sum|default:0 }},
+                        {{ low_cloud_count_project.low_cloud__sum|default:0 }}
                     ], backgroundColor: [
-                        'rgb(121, 5, 5)', 'rgb(219,  85, 101)', 'rgb(255, 159, 64)', 'rgb(54, 162, 235)'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
 
                     ],
                 }],
@@ -446,7 +319,6 @@
         });
     </script>
 
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
     <script type="text/javascript">
 
 

@@ -27,8 +27,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne"
-                                 data-parent="#accordionExample">
+                            <div id="collapseOne" class="collapse show" aria-labelledby="headingOne">
                                 <div class="card-body">
                                      {{data.description}}
 
@@ -49,8 +48,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
-                                 data-parent="#accordionExample">
+                            <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
                                 <div class="card-body">
                                     <div class="col-md-6">
                                     <table class="table table-bordered data-table table-fixed">
@@ -85,8 +83,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree"
-                                 data-parent="#accordionExample">
+                            <div id="collapseThree" class="collapse" aria-labelledby="headingThree">
                                 <div class="card-body">
                                      <pre>{{data.tags | safe}}<pre>
                                 </div>
@@ -102,8 +99,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapse4" class="collapse" aria-labelledby="heading4"
-                                 data-parent="#accordionExample">
+                            <div id="collapse4" class="collapse" aria-labelledby="heading4">
                                 <div class="card-body">
                                    {% for data in xref_list %} <a href="{{data}}" target="_blank">{{data}}</a> <br> {% endfor %}
                                 </div>
@@ -119,8 +115,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapse5" class="collapse" aria-labelledby="heading5"
-                                 data-parent="#accordionExample">
+                            <div id="collapse5" class="collapse" aria-labelledby="heading5">
                                 <div class="card-body">
                                       {% for data in cve_list %}
                         <li>{{data}}</li>
@@ -138,8 +133,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapse6" class="collapse" aria-labelledby="heading6"
-                                 data-parent="#accordionExample">
+                            <div id="collapse6" class="collapse" aria-labelledby="heading6">
                                 <div class="card-body">
                                     <pre>{{data.cvss_base}}</pre>
                                 </div>
@@ -155,8 +149,7 @@
                                     </a>
                                 </h5>
                             </div>
-                            <div id="collapse7" class="collapse" aria-labelledby="heading7"
-                                 data-parent="#accordionExample">
+                            <div id="collapse7" class="collapse" aria-labelledby="heading7">
                                 <div class="card-body">
                                      <pre>{{data.family}}}</pre>
                                 </div>

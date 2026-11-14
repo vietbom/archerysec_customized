@@ -32,7 +32,7 @@
                     {#                            </form>#}
                     {#                        </div>#}
                     <div class="d-md-flex align-items-center">
-                        <h1 class="card-title">{{ severity }} Vulnerability List</h1>
+                        <h1 class="card-title">{{ filter_label }}</h1>
                     </div>
                     <br>
                     <br>
@@ -56,7 +56,7 @@
                                     <tr data-target="#">
 
                                         <td>
-                                            <a href="{% url 'staticscanners:list_vuln_info' %}?scan_id={{ data.scan_id }}&scan_name={{ data.title }}&scanner={{ data.scanner }}">{{ data.title }}</a>
+                                            <a href="{% url 'staticscanners:list_vuln_info' %}?scan_id={{ data.scan_id }}&scan_name={{ data.title|urlencode }}&scanner={{ data.scanner }}">{{ data.title }}</a>
                                         </td>
                                         <td>
                                             {% with scanType=data.scanner %}
@@ -68,14 +68,14 @@
                                             {% endwith %}
                                         </td>
                                         {% if data.vuln_status == 'Open' %}
-                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
                                             </td>
                                         {% endif %}
                                         {% if data.vuln_status == 'Closed' %}
-                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>
+                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                         {% if data.note != None %}
                                             <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                         {% endif %}
@@ -84,7 +84,7 @@
                                         {% endif %}
 
                                         {% if data.vuln_status == 'Duplicate' %}
-                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
@@ -103,7 +103,7 @@
                                     <tr data-target="#">
 
                                         <td>
-                                            <a href="{% url 'cloudscanners:list_vuln_info' %}?scan_id={{ data.scan_id }}&scan_name={{ data.title }}&scanner={{ data.scanner }}">{{ data.title }}</a>
+                                            <a href="{% url 'cloudscanners:list_vuln_info' %}?scan_id={{ data.scan_id }}&scan_name={{ data.title|urlencode }}&scanner={{ data.scanner }}">{{ data.title }}</a>
                                         </td>
                                         <td>{% with scanType=data.scanner %}
                                             <div class="p-1"><img src="{{ PARSER_DICT | get_icon:scanType }}" alt="user"
@@ -114,14 +114,14 @@
                                             {% endwith %}
                                         </td>
                                         {% if data.vuln_status == 'Open' %}
-                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
                                             </td>
                                         {% endif %}
                                         {% if data.vuln_status == 'Closed' %}
-                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>
+                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                         {% if data.note != None %}
                                             <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                         {% endif %}
@@ -130,7 +130,7 @@
                                         {% endif %}
 
                                         {% if data.vuln_status == 'Duplicate' %}
-                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
@@ -150,7 +150,7 @@
                                     <tr data-target="#">
 
                                         <td>
-                                            <a href="{% url 'webscanners:list_vuln_info' %}?scan_id={{ data.scan_id }}&scan_name={{ data.title }}&scanner={{ data.scanner }}">{{ data.title }}</a>
+                                            <a href="{% url 'webscanners:list_vuln_info' %}?scan_id={{ data.scan_id }}&scan_name={{ data.title|urlencode }}&scanner={{ data.scanner }}">{{ data.title }}</a>
                                         </td>
                                         <td>{% with scanType=data.scanner %}
                                             <div class="p-1"><img src="{{ PARSER_DICT | get_icon:scanType }}" alt="user"
@@ -161,14 +161,14 @@
                                             {% endwith %}
                                         </td>
                                         {% if data.vuln_status == 'Open' %}
-                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
                                             </td>
                                         {% endif %}
                                         {% if data.vuln_status == 'Closed' %}
-                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>
+                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                         {% if data.note != None %}
                                             <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                         {% endif %}
@@ -177,7 +177,7 @@
                                         {% endif %}
 
                                         {% if data.vuln_status == 'Duplicate' %}
-                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
@@ -206,14 +206,14 @@
                                             {% endwith %}
                                         </td>
                                         {% if data.vuln_status == 'Open' %}
-                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
                                             </td>
                                         {% endif %}
                                         {% if data.vuln_status == 'Closed' %}
-                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>
+                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                         {% if data.note != None %}
                                             <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                         {% endif %}
@@ -222,7 +222,7 @@
                                         {% endif %}
 
                                         {% if data.vuln_status == 'Duplicate' %}
-                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
@@ -243,14 +243,14 @@
                                         </td>
                                         <td>Pentest</td>
                                         {% if data.vuln_status == 'Open' %}
-                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-purple">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}
                                             </td>
                                         {% endif %}
                                         {% if data.vuln_status == 'Closed' %}
-                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>
+                                        <td><span class="badge badge-pill badge-success">{{data.vuln_status}}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                         {% if data.note != None %}
                                             <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                         {% endif %}
@@ -259,7 +259,7 @@
                                         {% endif %}
 
                                         {% if data.vuln_status == 'Duplicate' %}
-                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>
+                                            <td><span class="badge badge-pill badge-warning">{{ data.vuln_status }}</span>{% if data.false_positive == "Yes" %} <span class="badge badge-pill badge-secondary">False Positive</span>{% endif %}
                                                 {% if data.note != None %}
                                                     <i data-toggle="tooltip" data-placement="top" title data-original-title="{{data.note}}" class="fas fa-comment-alt"></i>
                                                 {% endif %}

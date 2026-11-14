@@ -46,31 +46,19 @@ def error_404_view(request):
 
 
 class DeleteNotify(APIView):
-    renderer_classes = [TemplateHTMLRenderer]
-
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
-        notify_id = request.GET["notify_id"]
-
-        notify_del = Notification.objects.filter(
-            id=notify_id, organization=request.user.organization
-        )
-        notify_del.delete()
-
-        return HttpResponseRedirect(reverse("dashboard:dashboard"))
+    def post(self, request):
+        from common.notification_views import dismiss_notification
+        return dismiss_notification(request._request)
 
 
 class DeleteAllNotify(APIView):
-    renderer_classes = [TemplateHTMLRenderer]
-
     permission_classes = (IsAuthenticated,)
 
-    def get(self, request):
-        notify_del = Notification.objects.filter()
-        notify_del.delete()
-
-        return HttpResponseRedirect(reverse("dashboard:dashboard"))
+    def post(self, request):
+        from common.notification_views import dismiss_all_notifications
+        return dismiss_all_notifications(request._request)
 
 
 class Index(APIView):

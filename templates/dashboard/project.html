@@ -1,101 +1,31 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
-
 {% block body_class %}project-dashboard{% endblock %}
-
 {% block body %}
-
-<style>
-    /* =========================================================
-       DATE TIME SORT
-       ========================================================= */
-
-    .sortable-date {
-        cursor: pointer;
-        user-select: none;
-        white-space: nowrap;
-        transition: background-color 0.2s ease,
-                    color 0.2s ease;
-    }
-
-    .sortable-date:hover {
-        background-color: #f1f5f9;
-        color: #198754;
-    }
-
-    .sortable-date .sort-icon {
-        display: inline-block;
-        margin-left: 6px;
-        font-size: 12px;
-        font-weight: bold;
-        color: #198754;
-        transition: transform 0.2s ease;
-    }
-
-    .sortable-date:hover .sort-icon {
-        color: #157347;
-    }
-</style>
-
-
-<!-- =========================================================
-     PROJECT ANALYTICS
-     ========================================================= -->
-
-<div class="row">
-    <div class="col-md-12">
-
-        {% include "dashboard/_top_links.html" %}
-
-        <div class="card project-analytics-card">
-            <div class="card-body">
-
-                <div class="d-md-flex align-items-center">
-                    <div>
-                        <h5>Project Analytics</h5>
-                        <h5 class="card-subtitle"></h5>
-                    </div>
-                </div>
-
-                <div class="row">
-
-                    <div class="col">
-                        <!--<canvas id="webscans"></canvas>-->
-                        <canvas id="webscans"></canvas>
-                        <canvas id="networkscan"></canvas>
-                    </div>
-
-                    <!--
-                    <div class="col-sm-4 col-md-4">
-                        <canvas id="networkscan"
-                                width="100"
-                                height="100"></canvas>
-                    </div>
-                    -->
-
-                    <div class="col">
-                        <canvas id="static"></canvas>
-                        <canvas id="cloud"></canvas>
-                    </div>
-
-                    <!--
-                    <div class="col-sm-4 col-md-4">
-                    </div>
-                    -->
-
-                </div>
-
-            </div>
-        </div>
-
-    </div>
+<header class="dashboard-heading">
+    <div><a class="dashboard-back" href="{% url 'dashboard:dashboard' %}"><i class="fas fa-arrow-left" aria-hidden="true"></i> All projects</a>
+    <h1>{{ selected_project.project_name|default:'Project dashboard' }}</h1>
+    <p>{{ selected_project.project_disc|default:'Review project exposure and manage scan results.' }}</p></div>
+    <form class="dashboard-project-picker" action="{% url 'dashboard:proj_data' %}" method="get">
+        <label for="dashboard-project">Project</label><select id="dashboard-project" name="uu_id" required>
+        <option value="">Select a project</option>{% for project in all_project %}
+        <option value="{{ project.uu_id }}" {% if project.uu_id|stringformat:'s' == project_id %}selected{% endif %}>{{ project.project_name }}</option>
+        {% endfor %}</select><button class="btn btn-primary" type="submit">View</button>
+    </form>
+</header>
+{% if selected_project %}
+{% include "dashboard/_top_links.html" %}
+<div class="dashboard-overview-grid">
+    <section class="card dashboard-chart-card"><div class="card-body"><h2>Severity breakdown</h2><p class="dashboard-description">Open findings requiring remediation</p><div class="dashboard-chart-frame"><canvas id="ProChart" role="img" aria-label="Open findings by severity"></canvas></div></div></section>
+    <section class="card dashboard-chart-card"><div class="card-body"><h2>Risk distribution</h2><p class="dashboard-description">False positives and closed findings are excluded</p><div class="dashboard-chart-frame"><canvas id="ProBar" role="img" aria-label="Severity distribution"></canvas></div></div></section>
 </div>
-
-
-<!-- =========================================================
-     COMPLIANCE SUMMARY
-     ========================================================= -->
-
+<div class="dashboard-section-heading"><h2>Exposure by source</h2><span>Open findings by severity</span></div>
+<div class="dashboard-source-grid">
+<section class="card dashboard-chart-card"><div class="card-body"><h3>Web</h3><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="webscans" role="img" aria-label="Web findings"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><h3>Infrastructure</h3><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="networkscan" role="img" aria-label="Infrastructure findings"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><h3>Static & dependencies</h3><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="static" role="img" aria-label="Static & dependencies findings"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><h3>Cloud</h3><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="cloud" role="img" aria-label="Cloud findings"></canvas></div></div></section>
+</div>
 {% if total_compliance != 0 %}
 
 <div class="row">
@@ -186,7 +116,7 @@
                     </div>
 
                     <div class="col-sm-6 col-md-6">
-                        <canvas id="compliant"></canvas>
+                        <div class="dashboard-chart-frame"><canvas id="compliant"></canvas></div>
                     </div>
 
                 </div>
@@ -201,38 +131,19 @@
 
 
 <!-- =========================================================
-     PROJECT VULNERABILITY CHART
-     ========================================================= -->
-
-<div class="row">
-    <div class="col-md-12">
-
-        <div class="card">
-            <div class="card-body">
-
-                <div class="row">
-
-                    <div class="col-sm-6 col-md-6">
-                        <canvas id="ProChart"></canvas>
-                    </div>
-
-                    <div class="col-sm-6 col-md-6">
-                        <canvas id="ProBar"></canvas>
-                    </div>
-
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-</div>
-
-
-<!-- =========================================================
      PENTEST ACTIVITY
      ========================================================= -->
 
+<div class="dashboard-section-heading"><h2>Scan activity</h2><span>Browse results by scan type</span></div>
+<div class="scan-tabs" role="tablist" aria-label="Scan types">
+<button type="button" id="tab-web" role="tab" aria-controls="scan-web" aria-selected="true">Web</button>
+<button type="button" id="tab-static" role="tab" aria-controls="scan-static" aria-selected="false">Static</button>
+<button type="button" id="tab-cloud" role="tab" aria-controls="scan-cloud" aria-selected="false">Cloud</button>
+<button type="button" id="tab-network" role="tab" aria-controls="scan-network" aria-selected="false">Infrastructure</button>
+<button type="button" id="tab-compliance" role="tab" aria-controls="scan-compliance" aria-selected="false">Compliance</button>
+<button type="button" id="tab-pentest" role="tab" aria-controls="scan-pentest" aria-selected="false">Pentest</button>
+</div>
+<section class="scan-panel" id="scan-pentest" role="tabpanel" aria-labelledby="tab-pentest">
 <div class="row">
     <div class="col-md-12">
 
@@ -361,6 +272,9 @@
      DYNAMIC SCAN LIST
      ========================================================= -->
 
+
+</section>
+<section class="scan-panel" id="scan-web" role="tabpanel" aria-labelledby="tab-web">
 <div class="row">
     <div class="col-md-12">
 
@@ -515,6 +429,9 @@
      STATIC SCAN LIST
      ========================================================= -->
 
+
+</section>
+<section class="scan-panel" id="scan-static" role="tabpanel" aria-labelledby="tab-static">
 <div class="row">
     <div class="col-md-12">
 
@@ -678,6 +595,9 @@
      CLOUD SCAN LIST
      ========================================================= -->
 
+
+</section>
+<section class="scan-panel" id="scan-cloud" role="tabpanel" aria-labelledby="tab-cloud">
 <div class="row">
     <div class="col-md-12">
 
@@ -839,6 +759,9 @@
      INFRASTRUCTURE SCAN LIST
      ========================================================= -->
 
+
+</section>
+<section class="scan-panel" id="scan-network" role="tabpanel" aria-labelledby="tab-network">
 <div class="row">
     <div class="col-md-12">
 
@@ -1000,6 +923,9 @@
      COMPLIANCE SCAN LIST
      ========================================================= -->
 
+
+</section>
+<section class="scan-panel" id="scan-compliance" role="tabpanel" aria-labelledby="tab-compliance">
 <div class="row">
     <div class="col-md-12">
 
@@ -1251,12 +1177,14 @@
 </div>
 
 
+
+</section>
 <!-- =========================================================
      CHART.JS
      ========================================================= -->
 
-<script src="{% static 'js/Chart.js' %}"></script>
 <script src="{% static 'js/Chart.min.js' %}"></script>
+<script src="{% static 'archerysecurity/js/dashboard-charts.js' %}"></script>
 
 
 <script>
@@ -1269,7 +1197,7 @@
 
     var ProBar = new Chart(ctx, {
 
-        type: 'pie',
+        type: 'doughnut',
 
         data: {
 
@@ -1283,13 +1211,13 @@
                 ],
 
                 backgroundColor: [
-                    '#c53d4b',
-                    '#e17836',
-                    '#d6a72a',
-                    '#238b83'
+                    '#9f1239',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#0ea5e9'
                 ],
 
-                label: 'Venerability'
+                label: 'Open findings'
 
             }],
 
@@ -1308,7 +1236,7 @@
 
             title: {
 
-                display: true,
+                display: false,
 
                 text: 'Vulnerability found in Project'
 
@@ -1341,10 +1269,10 @@
                 ],
 
                 backgroundColor: [
-                    '#c53d4b',
-                    '#e17836',
-                    '#d6a72a',
-                    '#238b83'
+                    '#9f1239',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#0ea5e9'
                 ],
 
                 label: '',
@@ -1389,7 +1317,7 @@
 
     var webscans = new Chart(ctx, {
 
-        type: 'doughnut',
+        type: 'horizontalBar',
 
         data: {
 
@@ -1403,13 +1331,13 @@
                 ],
 
                 backgroundColor: [
-                    '#c53d4b',
-                    '#e17836',
-                    '#d6a72a',
-                    '#238b83'
+                    '#9f1239',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#0ea5e9'
                 ],
 
-                label: 'Venerability'
+                label: 'Open findings'
 
             }],
 
@@ -1428,7 +1356,7 @@
 
             title: {
 
-                display: true,
+                display: false,
 
                 text: 'Web Applications Scan'
 
@@ -1447,7 +1375,7 @@
 
     var networkscan = new Chart(ctx, {
 
-        type: 'doughnut',
+        type: 'horizontalBar',
 
         data: {
 
@@ -1461,13 +1389,13 @@
                 ],
 
                 backgroundColor: [
-                    '#c53d4b',
-                    '#e17836',
-                    '#d6a72a',
-                    '#238b83'
+                    '#9f1239',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#0ea5e9'
                 ],
 
-                label: 'Venerability'
+                label: 'Open findings'
 
             }],
 
@@ -1486,7 +1414,7 @@
 
             title: {
 
-                display: true,
+                display: false,
 
                 text: 'Network Scan'
 
@@ -1505,7 +1433,7 @@
 
     var static = new Chart(ctx, {
 
-        type: 'doughnut',
+        type: 'horizontalBar',
 
         data: {
 
@@ -1519,13 +1447,13 @@
                 ],
 
                 backgroundColor: [
-                    '#c53d4b',
-                    '#e17836',
-                    '#d6a72a',
-                    '#238b83'
+                    '#9f1239',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#0ea5e9'
                 ],
 
-                label: 'Venerability'
+                label: 'Open findings'
 
             }],
 
@@ -1544,7 +1472,7 @@
 
             title: {
 
-                display: true,
+                display: false,
 
                 text: 'Static Scans'
 
@@ -1563,7 +1491,7 @@
 
     var cloud = new Chart(ctx, {
 
-        type: 'doughnut',
+        type: 'horizontalBar',
 
         data: {
 
@@ -1577,13 +1505,13 @@
                 ],
 
                 backgroundColor: [
-                    '#c53d4b',
-                    '#e17836',
-                    '#d6a72a',
-                    '#238b83'
+                    '#9f1239',
+                    '#ef4444',
+                    '#f59e0b',
+                    '#0ea5e9'
                 ],
 
-                label: 'Venerability'
+                label: 'Open findings'
 
             }],
 
@@ -1602,7 +1530,7 @@
 
             title: {
 
-                display: true,
+                display: false,
 
                 text: 'Cloud Scans'
 
@@ -1617,6 +1545,7 @@
        COMPLIANCE SUMMARY
        ========================================================= */
 
+    {% if total_compliance %}
     var ctx = document.getElementById("compliant").getContext('2d');
 
     var cmpliant = new Chart(ctx, {
@@ -1639,7 +1568,7 @@
                     '#3a87ad'
                 ],
 
-                label: 'Venerability'
+                label: 'Open findings'
 
             }],
 
@@ -1657,7 +1586,7 @@
 
             title: {
 
-                display: true,
+                display: false,
 
                 text: 'Compliance Summary'
 
@@ -1668,6 +1597,7 @@
     });
 
 
+    {% endif %}
 </script>
 
 
@@ -2028,4 +1958,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </script>
 
+<script src="{% static 'archerysecurity/js/dashboard.js' %}" defer></script>
+{% else %}<div class="card"><div class="card-body dashboard-empty">Select a project to view findings and scan activity.</div></div>{% endif %}
 {% endblock %}

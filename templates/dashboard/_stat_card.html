@@ -1,0 +1,5 @@
+<a class="dashboard-stat-card dashboard-stat-card--{{ tone }}" href="{% url 'dashboard:all_high_vuln' %}?project_id={{ scope|default:'none' }}&amp;severity={{ severity|urlencode }}">
+    <span class="dashboard-stat-label">{{ label }}</span>
+    <strong class="dashboard-stat-value">{{ count|default:0 }}</strong>
+    <span class="dashboard-stat-caption">{{ caption }}</span>
+</a>

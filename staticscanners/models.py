@@ -72,6 +72,10 @@ class StaticScanResultsDb(models.Model):
     class Meta:
         db_table = "staticscanresultsdb"
         verbose_name_plural = "Static Scans Data"
+        constraints = [models.UniqueConstraint(
+            fields=("organization", "project", "scanner", "identity_hash"),
+            condition=~models.Q(identity_hash=""), name="unique_static_finding_identity",
+        )]
 
     scan_id = models.UUIDField(blank=True)
     rescan_id = models.TextField(blank=True, null=True)
@@ -83,6 +87,7 @@ class StaticScanResultsDb(models.Model):
     false_positive = models.TextField(null=True, blank=True)
     severity_color = models.TextField(blank=True)
     dup_hash = models.TextField(null=True, blank=True)
+    identity_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
     vuln_duplicate = models.TextField(null=True, blank=True)
     false_positive_hash = models.TextField(null=True, blank=True)
     vuln_status = models.TextField(null=True, blank=True)
@@ -115,3 +120,11 @@ class StaticScanResultsDb(models.Model):
     )
     is_active = models.BooleanField(default=True)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, default=1)
+
+
+class StaticScanFinding(models.Model):
+    scan = models.ForeignKey(StaticScansDb, on_delete=models.CASCADE, related_name="finding_links")
+    finding = models.ForeignKey(StaticScanResultsDb, on_delete=models.CASCADE, related_name="scan_links")
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("scan", "finding"), name="unique_static_scan_finding")]

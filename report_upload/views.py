@@ -39,6 +39,7 @@ from jiraticketing.services import enqueue_scan_findings
 from networkscanners.models import NetworkScanDb
 from projects.models import ProjectDb
 from scanners.scanner_parser import scanner_parser
+from scanners.report_formats import ReportValidationError
 from scanners.scanner_parser.network_scanner import OpenVas_Parser
 from staticscanners.models import StaticScansDb
 from tools.models import NiktoResultDb
@@ -70,6 +71,10 @@ class Upload(APIView):
     def post(self, request):
         try:
             return self._post_atomic(request)
+        except ReportValidationError as error:
+            messages.error(request, " ".join(str(item) for item in error.detail))
+            all_project = ProjectDb.objects.filter(organization=request.user.organization)
+            return render(request, "report_upload/upload.html", {"all_project": all_project})
         except Exception:
             logger.exception("Report upload failed")
             messages.error(request, "File Not Supported")
@@ -131,10 +136,7 @@ class Upload(APIView):
             if filetype == "XML" or filetype == "Nessus":
                 tree = ET.parse(file)
                 root_xml = tree.getroot()
-                en_root_xml = ET.tostring(root_xml, encoding="utf8").decode(
-                    "ascii", "ignore"
-                )
-                data = ET.fromstring(en_root_xml)
+                data = root_xml
             elif filetype == "LXML":
                 tree = etree.parse(file)
                 data = tree.getroot()
