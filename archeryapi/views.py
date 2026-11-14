@@ -248,9 +248,8 @@ class UploadScanResult(APIView):
     def post(self, request, format=None):
         date_time = datetime.datetime.now()
         project_uu_id = request.data.get("project_id")
-        project_id = (
-            ProjectDb.objects.filter(uu_id=project_uu_id).values("id").get()["id"]
-        )
+        project = ProjectDb.objects.get(uu_id=project_uu_id)
+        project_id = project.id
         scanner = request.data.get("scanner")
         if isinstance(request.data.get("filename"), UploadedFile):
             file = request.data.get("filename").read().decode("utf-8")
@@ -258,6 +257,11 @@ class UploadScanResult(APIView):
             file = request.data.get("filename")
 
         scan_url = request.data.get("scan_url")
+        target = (
+            request.data.get("target")
+            or scan_url
+            or project.project_name
+        )
         scan_id = uuid.uuid4()
         scan_status = "100"
         parser_dict = scanner_parser.parser_function_dict.get(
@@ -326,7 +330,7 @@ class UploadScanResult(APIView):
             if db_type == "WebScans":
                 return_func = self.web_result_data
                 scan_dump = WebScansDb(
-                    scan_url=scan_url,
+                    scan_url=target,
                     scan_id=scan_id,
                     project_id=project_id,
                     scan_status=scan_status,
@@ -335,7 +339,7 @@ class UploadScanResult(APIView):
             elif db_type == "StaticScans":
                 return_func = self.sast_result_data
                 scan_dump = StaticScansDb(
-                    project_name=scan_url,
+                    project_name=target,
                     scan_id=scan_id,
                     project_id=project_id,
                     scan_status=scan_status,

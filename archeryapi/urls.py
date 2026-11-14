@@ -140,5 +140,4 @@ urlpatterns = [
     # Update JIRA
     path("v1/update-jira/", views.UpdateJiraTicket.as_view()),
 ]
-
 urlpatterns = format_suffix_patterns(urlpatterns)

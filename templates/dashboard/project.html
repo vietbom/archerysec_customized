@@ -423,7 +423,7 @@
                                         <td width="20%">
 
                                             <a href="{% url 'webscanners:list_vuln' %}?scan_id={{ data.scan_id }}&scanner={{ data.scanner }}">
-                                                {{ data.scan_url }}
+                                                {{ data.scan_url|default:"Target not specified" }}
                                             </a>
 
                                         </td>
@@ -586,7 +586,7 @@
                                         <td width="20%">
 
                                             <a href="{% url 'staticscanners:list_vuln' %}?scan_id={{ data.scan_id }}&scanner={{ data.scanner }}">
-                                                {{ data.project_name }}
+                                                {{ data.project_name|default:"Target not specified" }}
                                             </a>
 
                                         </td>
