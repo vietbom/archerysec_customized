@@ -62,19 +62,24 @@ class ScannerSummaryTests(TestCase):
         self.assertEqual(overview.status_code, 200)
         self.assertEqual(overview.context["total_count_project"]["total_vuln__sum"], 8)
         self.assertEqual(overview.context["info_counts"]["total"], 2)
-        self.assertEqual(overview.context["scan_health"]["warning_count"], 10)
-        self.assertEqual(overview.context["scan_health"]["project_count"], 1)
         self.assertEqual(overview.context["false_count_project"]["total_false__sum"], 1)
         self.assertEqual(overview.context["close_count_project"]["total_close__sum"], 1)
         self.assertNotContains(overview, "Private project")
-        self.assertContains(overview, "Parser warnings are separate from Informational findings")
-        semgrep = next(row for row in overview.context["scanner_summaries"] if row["key"] == "semgrep")
-        self.assertEqual((semgrep["open"], semgrep["report_open"], semgrep["not_in_latest"]), (3, 2, 1))
+        self.assertNotContains(overview, "Scan coverage needs attention")
+        self.assertNotContains(overview, "Current findings by scanner")
         projects = []
         for project in (self.a, self.b):
             response = self.client.get(reverse("dashboard:proj_data"), {"uu_id": project.uu_id})
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.context["tota_vuln"], 4)
+            self.assertContains(response, "Current findings by scanner")
+            self.assertNotContains(response, "Scan coverage")
+            self.assertNotContains(response, "parser warnings")
+            if project == self.a:
+                self.assertEqual(response.context["scan_health"]["warning_count"], 10)
+                self.assertEqual(response.context["scan_health"]["project_count"], 1)
+                semgrep = next(row for row in response.context["scanner_summaries"] if row["key"] == "semgrep")
+                self.assertEqual((semgrep["open"], semgrep["report_open"], semgrep["not_in_latest"]), (2, 1, 1))
             rows = response.context["scanner_summaries"]
             self.assertEqual(sum(row["open"] for row in rows), 4)
             for row in rows:

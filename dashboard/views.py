@@ -79,8 +79,7 @@ def dashboard(request):
 
     all_project = ProjectDb.objects.filter(organization=request.user.organization)
 
-    from dashboard.services import informational_summary, native_scanner_summaries
-    scanner_summary = native_scanner_summaries(all_project)
+    from dashboard.services import informational_summary
     info_counts = dict.fromkeys(("total", "static", "web", "net", "cloud"), 0)
     for project in all_project:
         counts = informational_summary(project)
@@ -107,8 +106,6 @@ def dashboard(request):
         "dashboard/index.html",
         {
             "all_project": all_project,
-            "scanner_summaries": scanner_summary["tools"],
-            "scan_health": scanner_summary["health"],
             "info_counts": info_counts,
             "scanners": scanners,
             "total_count_project": ProjectDb.objects.filter(

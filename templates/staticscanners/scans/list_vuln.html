@@ -1,20 +1,6 @@
 {% extends 'dashboard/base.html' %}
 
 {% block body %}
-{% if scan.import_warnings %}
-<div class="alert alert-warning" role="alert">
-    <strong>Incomplete scan — auto-close skipped.</strong>
-    <p>Findings detected by Semgrep were imported. Findings absent from this report remain unchanged because some files were only partially parsed.</p>
-    <p><strong>Parser warnings are not Informational findings.</strong> They describe incomplete analysis of source files and are not included in vulnerability totals or severity counts.</p>
-    <details class="mt-2"><summary>{{ scan.import_warnings|length }} parser warnings · view affected files</summary>
-        <ul>{% for warning in scan.import_warnings %}<li><strong>{{ warning.path }}</strong>: {{ warning.message }}</li>{% endfor %}</ul>
-    </details>
-    <details class="mt-2"><summary>How to resolve incomplete coverage</summary>
-        <p>Review the affected files and the selected Semgrep rules/parser. Fix invalid syntax or use rules that support the template language. Run a new full scan after correcting the cause. Do not remove warnings from the JSON or exclude files simply to make the scan appear complete.</p>
-    </details>
-</div>
-{% endif %}
-
     <div class="row">
         <div class="col-md-12">
             <div class="card">

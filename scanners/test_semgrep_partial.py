@@ -79,8 +79,13 @@ class SemgrepPartialImportTests(TestCase):
         self.assertContains(listing, "Incomplete scan")
         self.assertContains(listing, "<th>Informational</th>", html=True)
         details = self.client.get(reverse("staticscanners:list_vuln"), {"scan_id": scan.scan_id})
-        self.assertContains(details, "auto-close skipped")
-        self.assertContains(details, "app/views/0.html")
+        self.assertContains(details, "Vulnerability List")
+        self.assertNotContains(details, "auto-close skipped")
+        self.assertNotContains(details, "Parser warnings are not Informational findings")
+        self.assertNotContains(details, "app/views/0.html")
+        self.assertNotContains(details, "How to resolve incomplete coverage")
+        scan.refresh_from_db()
+        self.assertEqual(len(scan.import_warnings), 10)
 
     def test_empty_partial_report_does_not_close_then_complete_empty_closes(self):
         self.upload(make_report("semgrepscan", ["A", "B"]))

@@ -112,9 +112,8 @@ def main():
             assert page.locator('#data_table th', has_text='Informational').count() == 1
             assert page.evaluate("pie.data.labels") == ['Critical', 'High', 'Medium', 'Low', 'Informational']
             assert page.evaluate("pie.data.datasets[0].data") == [4, 4, 5, 4, 2]
-            assert page.locator('.dashboard-scan-quality').is_visible()
-            assert page.locator('.scanner-summary-table tr[data-scanner="semgrep"] td').nth(6).inner_text() == '1'
-            assert page.locator('.scanner-summary-table tr[data-scanner="gitleaks"] td').nth(10).inner_text() == '1'
+            assert page.locator('.dashboard-scan-quality').count() == 0
+            assert page.locator('.dashboard-scanner-summary').count() == 0
             assert page.locator('.notification-count').inner_text() == "1"
             page.locator('#notification-toggle').click()
             page.locator('.notification-item').wait_for(state='visible')
@@ -126,6 +125,10 @@ def main():
             assert page.locator('.dashboard-stat-card').count() == 8
             assert page.locator('.dashboard-stat-card--info .dashboard-stat-value').inner_text() == '2'
             assert page.evaluate("ProChart.data.datasets[0].data") == [4, 4, 4, 4, 2]
+            assert page.locator('.dashboard-scan-quality').count() == 0
+            assert page.locator('.dashboard-scanner-summary').is_visible()
+            assert page.locator('.scanner-summary-table th', has_text='Scan coverage').count() == 0
+            assert page.locator('.scanner-summary-table tr[data-scanner="semgrep"] td').nth(6).inner_text() == '1'
             for tab in page.locator('.scan-tabs [role=tab]').all():
                 tab.click()
                 assert tab.get_attribute('aria-selected') == 'true'
@@ -142,6 +145,8 @@ def main():
             page.locator('.preloader').wait_for(state='hidden')
             assert page.locator('.dashboard-stat-card--medium').is_visible()
             assert page.locator('.dashboard-stat-card--low').is_visible()
+            assert page.locator('.dashboard-scan-quality').count() == 0
+            assert page.locator('.dashboard-scanner-summary').count() == 0
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Overview overflows mobile viewport"
             page.screenshot(path=str(output / "overview-mobile.png"), full_page=True)
             # Exercise the actual modal/form flow on one of several same-title rows.
