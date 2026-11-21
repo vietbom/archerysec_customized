@@ -1,53 +1,125 @@
 {% extends 'dashboard/base.html' %}
 {% load static %}
-{% block body %}
 
-    <div class="row justify-content-md-center">
-        <div class="col-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-md-flex align-items-center">
-                        <h1 class="card-title">Profile</h1>
-                    </div>
-                    <br>
-                    <div class="card">
-                        <div class="row">
-                            <div class="col-md-12">
-                                <div class="card">
-                            {% for profile in profiles %}
-                            <div class="form-group row">
-                                <label for="staticEmail" class="col-sm-2 col-form-label">Name</label>
-                                <div class="col-sm-10">
-                                    <input type="text" readonly class="form-control-plaintext"
-                                           id="staticEmail"
-                                           value="{{ profile.name }}">
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="staticEmail" class="col-sm-2 col-form-label">Email</label>
-                                <div class="col-sm-10">
-                                    <input type="text" readonly class="form-control-plaintext"
-                                           id="staticEmail"
-                                           value="{{ profile.email }}">
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label for="staticEmail"
-                                       class="col-sm-2 col-form-label">Organisation</label>
-                                <div class="col-sm-10">
-                                    <input type="text" readonly class="form-control-plaintext"
-                                           id="staticEmail"
-                                           value="{{ profile.organization }}">
-                                </div>
-                            </div>
-                            {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+{% block body_class %}dashboard-shell profile-page{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
+<link href="{% static 'archerysecurity/css/profile.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<main class="profile-content" aria-labelledby="profile-title">
+    <header class="profile-heading">
+        <div>
+            <span class="profile-eyebrow">YOUR ACCOUNT</span>
+            <h1 id="profile-title">Profile &amp; security</h1>
+            <p>Your workspace identity and account security, in one place.</p>
+        </div>
+        <a class="profile-back" href="{% url 'dashboard:dashboard' %}">
+            <i class="fas fa-arrow-left" aria-hidden="true"></i> Back to dashboard
+        </a>
+    </header>
+
+    {% for message in messages %}
+        <div class="profile-notice {% if message.level == 25 %}profile-notice--success{% elif message.level >= 40 %}profile-notice--error{% endif %}" role="status">
+            <i class="fas {% if message.level == 25 %}fa-check-circle{% else %}fa-info-circle{% endif %}" aria-hidden="true"></i>
+            <span>{{ message }}</span>
+        </div>
+    {% endfor %}
+
+    <div class="profile-layout">
+        {% for profile in profiles %}
+        <aside class="profile-panel profile-account" aria-labelledby="account-title">
+            <div class="profile-account-header">
+                <span class="profile-avatar" aria-hidden="true">{{ profile.name|default:profile.email|slice:":1"|upper }}</span>
+                <div class="profile-identity">
+                    <span class="profile-section-label" id="account-title">ACCOUNT DETAILS</span>
+                    <h2>{{ profile.name|default:profile.email }}</h2>
+                    <span class="profile-role"><i class="fas fa-user" aria-hidden="true"></i> {{ profile.role|default:"Member" }}</span>
                 </div>
             </div>
-        </div>
+            <dl class="profile-account-details">
+                <div>
+                    <dt>Email address</dt>
+                    <dd>{{ profile.email }}</dd>
+                </div>
+                <div>
+                    <dt>Organization</dt>
+                    <dd>{{ profile.organization }}</dd>
+                </div>
+                <div>
+                    <dt>Account status</dt>
+                    <dd><span class="profile-status{% if not profile.is_active %} profile-status--inactive{% endif %}"><span aria-hidden="true"></span>{% if profile.is_active %}Active{% else %}Inactive{% endif %}</span></dd>
+                </div>
+                {% if profile.last_login %}
+                <div>
+                    <dt>Last sign in</dt>
+                    <dd>{{ profile.last_login|date:"d M Y, H:i" }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+            <div class="profile-account-caption">
+                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                <span>Your role determines access to your organization's workspace.</span>
+            </div>
+        </aside>
+        {% endfor %}
 
-
+        <section class="profile-panel profile-security" aria-labelledby="security-title">
+            <div class="profile-security-heading">
+                <span class="profile-security-icon"><i class="fas fa-lock" aria-hidden="true"></i></span>
+                <div>
+                    <h2 id="security-title">Change password</h2>
+                    <p>Choose a strong password to protect your account.</p>
+                </div>
+            </div>
+            <div class="profile-security-body">
+                <form id="profile-password-form" method="post" action="{% url 'users:profile' %}">
+                    {% csrf_token %}
+                    {% if password_form.errors %}
+                        <div class="profile-notice profile-notice--error" role="alert">
+                            <i class="fas fa-exclamation-circle" aria-hidden="true"></i>
+                            <span>Your password was not changed. Please correct the errors below.</span>
+                        </div>
+                    {% endif %}
+                    {% for error in password_form.non_field_errors %}
+                        <div class="profile-notice profile-notice--error" role="alert">{{ error }}</div>
+                    {% endfor %}
+                    <div class="profile-form-toolbar">
+                        <span>All password fields are required</span>
+                        <button class="profile-visibility" type="button" data-password-visibility hidden
+                                aria-pressed="false" aria-controls="id_old_password id_new_password1 id_new_password2">
+                            <i class="fas fa-eye" aria-hidden="true"></i> <span>Show passwords</span>
+                        </button>
+                    </div>
+                    <div class="profile-fields">
+                        {% for field in password_form %}
+                            <div class="profile-field{% if forloop.first %} profile-field--full{% endif %}{% if field.errors %} profile-field--error{% endif %}">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                {{ field }}
+                                {% for error in field.errors %}
+                                    <div class="profile-field-error" role="alert">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% for field in password_form %}
+                        {% if field.help_text %}
+                        <div class="profile-requirements" id="{{ field.id_for_label }}_help">
+                            <h3><i class="fas fa-check-circle" aria-hidden="true"></i> Password requirements</h3>
+                            {{ field.help_text }}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    <div class="profile-form-footer">
+                        <p><i class="fas fa-shield-alt" aria-hidden="true"></i> You will stay signed in on this session.</p>
+                        <button type="submit" class="profile-submit">Update password <i class="fas fa-arrow-right" aria-hidden="true"></i></button>
+                    </div>
+                </form>
+            </div>
+        </section>
+    </div>
+</main>
+<script src="{% static 'archerysecurity/js/profile.js' %}" defer></script>
 {% endblock %}

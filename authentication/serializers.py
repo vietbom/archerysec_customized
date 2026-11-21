@@ -82,26 +82,22 @@ class UpdtPassReqSerializer(serializers.Serializer):
 
 
 class UpdatePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(required=True)
-    new_password1 = serializers.CharField(required=True)
-    new_password2 = serializers.CharField(required=True)
-
-    def validate_old_password(self, value):
-        user = self.context["request"].user
-        if not user.check_password(value):
-            raise serializers.ValidationError("Incorrect old password")
-        return value
+    old_password = serializers.CharField(required=True, write_only=True, trim_whitespace=False)
+    new_password1 = serializers.CharField(required=True, write_only=True, trim_whitespace=False)
+    new_password2 = serializers.CharField(required=True, write_only=True, trim_whitespace=False)
 
     def validate(self, attrs):
-        if attrs["new_password1"] != attrs["new_password2"]:
-            raise serializers.ValidationError("New passwords do not match")
+        self.password_form = PasswordChangeForm(self.context["request"].user, attrs)
+        if not self.password_form.is_valid():
+            raise serializers.ValidationError(self.password_form.errors)
         return attrs
 
     def save(self):
         request = self.context["request"]
-        form = PasswordChangeForm(request.user, self.validated_data)
-        if form.is_valid():
-            user = form.save()
-            # Updating the session with the new password hash
+        # Validation, including Django's password policy, must finish before
+        # saving. A rejected form previously returned an unbound `user` (500).
+        self.validated_data
+        user = self.password_form.save()
+        if hasattr(request, "session"):
             update_session_auth_hash(request, user)
         return user

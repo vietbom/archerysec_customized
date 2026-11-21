@@ -50,9 +50,11 @@ def mark_finding(request, result_model, scan_model):
     finding.note = data["note"]
     finding.updated_by = request.user
     if data["false"] == "Yes":
-        # Static parsers use the finding fingerprint; legacy web parsers use
-        # title + URL + severity. ZAP supports this legacy suppression key too.
-        if hasattr(finding, "fileName"):
+        # TH-04: the four native importers bind triage to the exact finding
+        # identity, never to the broad ZAP title + site + severity key.
+        if finding.scanner in ("gitleaks", "Semgrep", "Trivy", "Zap"):
+            finding.false_positive_hash = (finding.identity_hash if finding.identity_version == 2 else finding.dup_hash)
+        elif hasattr(finding, "fileName"):
             finding.false_positive_hash = finding.dup_hash or hashlib.sha256(
                 (str(finding.title) + str(finding.fileName) + str(finding.severity)).encode("utf-8")
             ).hexdigest()

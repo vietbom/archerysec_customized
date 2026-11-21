@@ -42,6 +42,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from stronghold.decorators import public
 
 from authentication.models import *
+from authentication.password_views import UpdatePassword
 from authentication.serializers import *
 from common.functions import current_epoch, epoch_to_date
 from user_management import permissions
@@ -176,21 +177,6 @@ class ResetPassword(APIView):
             )
         else:
             return Response(content, status=status.HTTP_200_OK)
-
-
-class UpdatePassword(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request, format=None):
-        serializer = UpdatePasswordSerializer(
-            data=request.data, context={"request": request}
-        )
-        if serializer.is_valid():
-            serializer.save()
-            content = {"message": "Password Changed"}
-            return Response(content, status=status.HTTP_200_OK)
-        else:
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserSettings(APIView):

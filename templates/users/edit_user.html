@@ -11,6 +11,13 @@
                     <h1 class="card-title">User Details</h1>
                 </div>
                 <br>
+                {% if errors %}
+                <div class="alert alert-danger" role="alert">
+                    {% for field, field_errors in errors.items %}
+                        {% for error in field_errors %}<div>{{ field }}: {{ error }}</div>{% endfor %}
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <div class="card">
                     <div class="row">
                         <div class="col-md-12">
@@ -29,9 +36,16 @@
                                                    value="{{ data.email }}">
                                         </div>
                                         <div class="form-group ">
-                                            <label>Password</label>
-                                            <input name="password" class="form-control" type="password" value="{{ data.password }}"
-                                                   placeholder="Password">
+                                            <label for="new-password">New password (optional)</label>
+                                            <input id="new-password" name="password" class="form-control" type="password"
+                                                   autocomplete="new-password" placeholder="Leave blank to keep the current password"
+                                                   aria-describedby="password-help">
+                                            <small id="password-help" class="form-text text-muted">Leave both password fields blank when updating user details. Enter and confirm a new password only to reset it.</small>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="password-confirm">Confirm new password</label>
+                                            <input id="password-confirm" name="password_confirm" class="form-control" type="password"
+                                                   autocomplete="new-password" placeholder="Confirm new password">
                                         </div>
                                         <div class="form-group ">
                                             <label>Image</label>

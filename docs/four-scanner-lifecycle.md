@@ -1,4 +1,13 @@
-# Four-scanner upload and lifecycle audit
+# Four-scanner upload and lifecycle audit — historical rollback policy
+
+> **Superseded on 2026-11-17.** The full text below describes the earlier
+> rollback, not the current implementation. Current identity v2, endpoint-based
+> ZAP findings, false-positive scope, new migrations and thesis changes are in
+> [scanner-upgrade-2026-11-17.md](scanner-upgrade-2026-11-17.md).
+> Native formats and the complete-snapshot organization/project/scanner boundary
+> remain unchanged. Use `audit_scanner_identity` after applying the version-marker
+> migrations to inspect unconverted legacy rows. Historical diagrams remain
+> labeled as pre-v2 teaching aids in their README.
 
 The comparison boundary is **organization + ArcherySec project + scanner**.
 In this deployment each project represents one branch, as requested. Each

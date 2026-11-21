@@ -88,6 +88,7 @@ class StaticScanResultsDb(models.Model):
     severity_color = models.TextField(blank=True)
     dup_hash = models.TextField(null=True, blank=True)
     identity_hash = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    identity_version = models.PositiveSmallIntegerField(default=0)
     vuln_duplicate = models.TextField(null=True, blank=True)
     false_positive_hash = models.TextField(null=True, blank=True)
     vuln_status = models.TextField(null=True, blank=True)

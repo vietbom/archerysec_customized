@@ -21,7 +21,16 @@ from staticscanners.models import StaticScanFinding, StaticScanResultsDb, Static
 from webscanners.models import WebScanResultsDb
 
 call_command('migrate', run_syncdb=True, verbosity=0)
-old = ProjectState.from_apps(apps)
+before_version = ProjectState.from_apps(apps)
+for label, name in (('staticscanners', 'staticscanresultsdb'), ('webscanners', 'webscanresultsdb')):
+    before_version.remove_field(label, name, 'identity_version')
+static_version = import_module('staticscanners.migrations.0040_finding_identity_version').Migration('0040_finding_identity_version', 'staticscanners')
+web_version = import_module('webscanners.migrations.0032_finding_identity_version').Migration('0032_finding_identity_version', 'webscanners')
+with connection.schema_editor() as editor:
+    static_version.unapply(before_version, editor)
+with connection.schema_editor() as editor:
+    web_version.unapply(before_version, editor)
+old = before_version.clone()
 old.remove_model('staticscanners', 'staticscanfinding')
 for label, name in (('staticscanners', 'staticscanresultsdb'), ('webscanners', 'webscanresultsdb')):
     old.models[label, name].options['constraints'] = []
@@ -44,8 +53,13 @@ with connection.schema_editor() as editor:
     after_static = static_migration.apply(old.clone(), editor)
 with connection.schema_editor() as editor:
     after_both = web_migration.apply(after_static.clone(), editor)
+with connection.schema_editor() as editor:
+    after_static_version = static_version.apply(after_both.clone(), editor)
+with connection.schema_editor() as editor:
+    web_version.apply(after_static_version.clone(), editor)
 upgraded = StaticScanResultsDb.objects.get(pk=legacy.pk)
 assert upgraded.identity_hash == ''
+assert upgraded.identity_version == 0
 assert (upgraded.false_positive, upgraded.note) == ('Yes', 'Preserve triage')
 assert StaticScanFinding.objects.get(finding=upgraded).scan_id == scan.pk
 for model, name in ((StaticScanResultsDb, 'unique_static_finding_identity'), (WebScanResultsDb, 'unique_web_finding_identity')):
@@ -61,6 +75,10 @@ except IntegrityError:
     pass
 else:
     raise AssertionError('Identity uniqueness was not enforced')
+with connection.schema_editor() as editor:
+    web_version.unapply(after_static_version, editor)
+with connection.schema_editor() as editor:
+    static_version.unapply(after_both, editor)
 with connection.schema_editor() as editor:
     web_migration.unapply(after_static, editor)
 with connection.schema_editor() as editor:

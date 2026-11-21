@@ -1,5 +1,11 @@
 **Đối chiếu bản đồ án đã nộp và hướng dẫn giải thích sản phẩm — 14/11/2026**
 
+> **Bản đối chiếu lịch sử tại 14/11.** Từ 17/11 người dùng cho phép thay đổi
+> sản phẩm và cập nhật quyển. Những câu “hiện tại/đã khôi phục” bên dưới mô tả
+> mốc rollback cũ, không mô tả chính sách v2. Dùng
+> [bảng thay đổi và nội dung thay thế cho quyển](scanner-upgrade-2026-11-17.md)
+> để giải thích code hiện hành, đặc biệt identity_hash, ZAP theo endpoint và FP.
+
 Tài liệu gốc: [DO AN TOT NGHIEP - NGUUYEN DUC VIET 12112026.docx](../DO%20AN%20TOT%20NGHIEP%20-%20NGUUYEN%20DUC%20VIET%2012112026.docx).
 Đối chiếu với working tree hiện tại của ArcherySec và các template CI cục bộ.
 Tài liệu này được cập nhật sau quyết định khôi phục công thức fingerprint cũ.

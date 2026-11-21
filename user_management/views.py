@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.http import HttpResponseRedirect
@@ -34,8 +34,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from user_management import permissions
+from user_management.forms import ProfilePasswordChangeForm
 from user_management.models import *
 from user_management.serializers import *
+from authentication.serializers import UpdatePasswordSerializer
 
 
 class Users(APIView):
@@ -91,35 +93,13 @@ class Users(APIView):
             return Response(content, status=status.HTTP_200_OK)
 
     def put(self, request, uu_id):
-        serializer = UserPutReqSerializers(data=request.data)
+        user = get_object_or_404(UserProfile, uu_id=uu_id)
+        serializer = UserPutReqSerializers(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
-        email = request.data.get("email")
-        password = make_password(request.data.get("password"))
-        role = request.data.get("role")
-        name = request.data.get("name")
-        image = request.data.get("image")
-        is_active = request.data.get("is_active")
-        is_staff = request.data.get("is_staff")
-
-        user_profile = UserProfile.objects.filter(uu_id=uu_id).update(
-            email=email,
-            password=password,
-            role=role,
-            name=name,
-            image=image,
-            is_active=is_active,
-            is_staff=is_staff,
-            organization=request.user.organization,
-        )
-        if user_profile > 0:
-            return Response(
-                {"message": "User Profile Updated"}, status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                {"message": "User Doesn't Exist"}, status=status.HTTP_404_NOT_FOUND
-            )
+        serializer.save()
+        if user.pk == request.user.pk and hasattr(request, "session") and hasattr(serializer, "new_password"):
+            update_session_auth_hash(request, user)
+        return Response({"message": "User Profile Updated"}, status=status.HTTP_200_OK)
 
 
 class InviteUserAPIView(APIView):
@@ -348,7 +328,6 @@ class UsersEdit(APIView):
             serialized_data = UserPutReqSerializers(user_details, many=True)
         else:
             try:
-                print(uu_id)
                 user_details = UserProfile.objects.filter(uu_id=uu_id)
                 serialized_data = UserPutReqSerializers(user_details, many=False)
             except UserProfile.uu_id.DoesNotExist:
@@ -365,31 +344,17 @@ class UsersEdit(APIView):
         )
 
     def post(self, request, uu_id):
-        serializer = UserPutReqSerializers(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        email = request.data.get("email")
-        password = make_password(request.data.get("password"))
-        role = request.data.get("role")
-        name = request.data.get("name")
-        image = request.data.get("image")
-        organization = request.data.get("organization")
-        pass_token = request.data.get("pass_token")
-        user_profile = UserProfile.objects.filter(uu_id=uu_id).update(
-            email=email,
-            password=password,
-            role=role,
-            name=name,
-            image=image,
-            pass_token=pass_token,
-            organization=organization,
-        )
-        if user_profile > 0:
-            return HttpResponseRedirect("/users/list_user/")
-        else:
-            return Response(
-                {"message": "User Doesn't Exist"}, status=status.HTTP_404_NOT_FOUND
-            )
+        user = get_object_or_404(UserProfile, uu_id=uu_id)
+        # Missing HTML checkbox fields must not deactivate the account.
+        serializer = UserPutReqSerializers(user, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response({"user_details": [user], "user_uu_id": uu_id,
+                             "org": Organization.objects.all(), "errors": serializer.errors},
+                            status=status.HTTP_400_BAD_REQUEST)
+        serializer.save()
+        if user.pk == request.user.pk and hasattr(request, "session") and hasattr(serializer, "new_password"):
+            update_session_auth_hash(request, user)
+        return HttpResponseRedirect("/users/list_user/")
 
 
 class UsersAdd(APIView):
@@ -442,36 +407,42 @@ class Profile(APIView):
         """
         id = request.user.id
         user_profile = UserProfile.objects.filter(id=id)
-        serialized_data = UserProfileSerializers(user_profile, many=False)
+        serialized_data = UserProfileSerializers(request.user)
         if request.path[:4] == "/api":
             return Response(serialized_data.data, status=status.HTTP_200_OK)
         else:
-            return render(request, "profile/profile.html", {"profiles": user_profile})
+            return render(request, "profile/profile.html", {
+                "profiles": user_profile, "password_form": ProfilePasswordChangeForm(request.user),
+            })
         # return Response({"serializer": serializer, "profiles": user_profile})
 
-    def put(self, request, uu_id):
-        serializer = UserProfilePutReqSerializers(data=request.data)
+    def post(self, request):
+        form = ProfilePasswordChangeForm(request.user, request.data)
+        if form.is_valid():
+            user = form.save()
+            update_session_auth_hash(request, user)
+            messages.success(request, "Your password has been changed successfully.")
+            return HttpResponseRedirect(reverse("users:profile"))
+        return render(request, "profile/profile.html", {
+            "profiles": UserProfile.objects.filter(pk=request.user.pk), "password_form": form,
+        })
+
+    def put(self, request):
+        # Password changes are explicit and separately validated. Ordinary
+        # profile edits (including legacy hash submissions) preserve password.
+        if any(key in request.data for key in ("old_password", "new_password1", "new_password2")):
+            serializer = UpdatePasswordSerializer(data=request.data, context={"request": request})
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response({"message": "Password Changed"}, status=status.HTTP_200_OK)
+        serializer = UserProfilePutReqSerializers(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-
-        password = make_password(request.data.get("password"))
-        name = request.data.get("name")
-        image = request.data.get("image")
-
-        id = request.user.id
-
-        user_profile = UserProfile.objects.filter(id=id).update(
-            password=password,
-            name=name,
-            image=image,
-        )
-        if user_profile > 0:
-            return Response(
-                {"message": "User Profile Updated"}, status=status.HTTP_200_OK
-            )
-        else:
-            return Response(
-                {"message": "User Doesn't Exist"}, status=status.HTTP_404_NOT_FOUND
-            )
+        fields = {key: value for key, value in serializer.validated_data.items() if key != "password"}
+        for field, value in fields.items():
+            setattr(request.user, field, value)
+        if fields:
+            request.user.save(update_fields=list(fields))
+        return Response({"message": "User Profile Updated"}, status=status.HTTP_200_OK)
 
 
 class Roles(APIView):

@@ -123,7 +123,7 @@ class FindingLifecycleTests(TestCase):
                 old = self.client.get(reverse(namespace + ":list_vuln"), {"scan_id": first.scan_id})
                 self.assertEqual(len(old.context["all_vuln"]), 2)
 
-    def test_original_fingerprint_fields_control_create_and_close(self):
+    def test_display_metadata_changes_update_the_same_stable_finding(self):
         for scanner in ("gitleaks", "semgrepscan", "trivy", "zap_scan"):
             with self.subTest(scanner=scanner):
                 self.project = ProjectDb.objects.create(project_name=scanner, organization=self.org)
@@ -144,21 +144,13 @@ class FindingLifecycleTests(TestCase):
                 self.upload(scanner, changed)
                 finding.refresh_from_db()
                 self.assertEqual(finding.created_time, created_time)
-                if scanner == "gitleaks":
-                    # Commit message was never part of Gitleaks' original hash.
-                    self.assertEqual(model.objects.filter(project=self.project).count(), 1)
-                    self.assertEqual(model.objects.get(project=self.project).vuln_id, identity)
-                    self.assert_totals(model, 1, 0)
-                else:
-                    self.assertEqual(model.objects.filter(project=self.project).count(), 2)
-                    self.assertEqual(finding.vuln_status, "Closed")
-                    self.assertNotEqual(model.objects.get(project=self.project, vuln_status="Open").vuln_id, identity)
-                    self.assert_totals(model, 1, 1)
-                    # Returning to the old payload reopens its original UUID.
-                    self.upload(scanner, original)
-                    finding.refresh_from_db()
-                    self.assertEqual(finding.vuln_status, "Open")
-                    self.assert_totals(model, 1, 1)
+                self.assertEqual(model.objects.filter(project=self.project).count(), 1)
+                self.assertEqual(model.objects.get(project=self.project).vuln_id, identity)
+                self.assert_totals(model, 1, 0)
+                self.upload(scanner, original)
+                finding.refresh_from_db()
+                self.assertEqual(finding.vuln_status, "Open")
+                self.assert_totals(model, 1, 0)
 
     def test_invalid_report_does_not_close_existing_findings(self):
         invalid = {"gitleaks": {}, "semgrepscan": {}, "trivy": {},
@@ -182,7 +174,7 @@ class FindingLifecycleTests(TestCase):
         self.upload("zap_scan", report)
         self.assertEqual(WebScanResultsDb.objects.get(project=self.project).description, "Mô tả lỗ hổng")
 
-    def test_semgrep_native_id_does_not_override_original_end_position_hash(self):
+    def test_semgrep_native_id_survives_changed_positions(self):
         report = make_report("semgrepscan", ["A"])
         report["results"][0]["extra"]["fingerprint"] = "stable-match-id"
         self.upload("semgrepscan", report)
@@ -190,11 +182,11 @@ class FindingLifecycleTests(TestCase):
         report["results"][0]["start"] = {"line": 100, "col": 10}
         report["results"][0]["end"] = {"line": 101, "col": 13}
         self.upload("semgrepscan", report)
-        self.assertEqual(StaticScanResultsDb.objects.filter(project=self.project).count(), 2)
+        self.assertEqual(StaticScanResultsDb.objects.filter(project=self.project).count(), 1)
         original.refresh_from_db()
-        self.assertEqual(original.vuln_status, "Closed")
-        self.assertNotEqual(StaticScanResultsDb.objects.get(project=self.project, vuln_status="Open").vuln_id, original.vuln_id)
-        self.assert_totals(StaticScanResultsDb, 1, 1)
+        self.assertEqual(original.vuln_status, "Open")
+        self.assertEqual(StaticScanResultsDb.objects.get(project=self.project).vuln_id, original.vuln_id)
+        self.assert_totals(StaticScanResultsDb, 1, 0)
 
     def test_existing_rows_match_dup_hash_with_or_without_the_retired_identity(self):
         for scanner in ("gitleaks", "semgrepscan", "trivy", "zap_scan"):
@@ -206,10 +198,11 @@ class FindingLifecycleTests(TestCase):
                     model, _ = self.models(scanner)
                     finding = model.objects.get(project=self.project)
                     original_id, original_hash = finding.vuln_id, finding.dup_hash
+                    expected_identity = finding.identity_hash
                     # Simulate both pre-upgrade rows and rows produced by the
                     # intermediate stable-identity implementation. Missing history
                     # links must be remembered before moving the latest scan ID.
-                    model.objects.filter(pk=finding.pk).update(identity_hash=old_identity,
+                    model.objects.filter(pk=finding.pk).update(identity_hash=old_identity, identity_version=0,
                         false_positive="Yes", vuln_status="Closed", is_active=False,
                         note="Keep analyst review", jira_ticket="DEMO-1")
                     finding.scan_links.all().delete()
@@ -222,8 +215,7 @@ class FindingLifecycleTests(TestCase):
                     self.assertEqual(set(finding.scan_links.values_list("scan__scan_id", flat=True)),
                                      {first.scan_id, second.scan_id})
                     self.assertEqual(second.total_vul, 0)
-                    # Rollback of the identity policy never erases the old column.
-                    self.assertEqual(finding.identity_hash, old_identity)
+                    self.assertEqual((finding.identity_hash, finding.identity_version), (expected_identity, 2))
 
     def test_distinct_zap_instances_are_not_merged_by_site_and_rule(self):
         report = make_report("zap_scan", ["A"])
@@ -335,10 +327,10 @@ class FindingLifecycleTests(TestCase):
         self.assertEqual(set(WebScanResultsDb.objects.values_list("url", flat=True)), {"https://app.test", "https://other.test"})
         changed = report.replace("</instances>", "<instance><uri>https://app.test/extra</uri><method>POST</method></instance></instances>")
         self.upload("zap_scan", changed)
-        self.assert_totals(WebScanResultsDb, 2, 2)
+        self.assert_totals(WebScanResultsDb, 4, 0)
         self.assertEqual(WebScanResultsDb.objects.filter(project=self.project).count(), 4)
         opened = WebScanResultsDb.objects.filter(project=self.project, vuln_status="Open")
-        self.assertTrue(all(len(json.loads(item.instance)) == 2 for item in opened))
+        self.assertTrue(all(len(json.loads(item.instance)) == 1 for item in opened))
 
     def test_false_positive_survives_absence_and_manual_closed_findings_reopen(self):
         for scanner in ("gitleaks", "semgrepscan", "trivy", "zap_scan"):

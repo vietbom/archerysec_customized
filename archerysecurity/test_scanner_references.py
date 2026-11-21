@@ -96,7 +96,7 @@ class ScannerReferenceImportTests(TestCase):
         self.assert_round_trip(semgrep, "semgrep_report_json", "Semgrep", report, self.urls)
 
     def test_semgrep_without_metadata_has_empty_references(self):
-        report = {"results": [{"check_id": "test-rule", "path": "app.js",
+        report = {"results": [{"check_id": "test-rule", "path": "app.js", "start": {"line": 1, "col": 1},
                                "extra": {"metadata": None, "severity": "ERROR"}}]}
         finding = self.ingest(semgrep, "semgrep_report_json", "Semgrep", report)
         self.assertEqual(json.loads(finding.references), [])

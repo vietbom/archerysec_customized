@@ -1,5 +1,11 @@
 # Khôi phục định danh theo phiên bản dùng trong đồ án
 
+> **Tài liệu lịch sử — không còn là chính sách hiện hành từ 17/11/2026.**
+> Người dùng đã cho phép cải tiến lại. Xem
+> [đặc tả v2 và bảng sửa quyển](scanner-upgrade-2026-11-17.md).
+> Các công thức dưới đây còn dùng tính `dup_hash` tương thích, không còn là
+> khóa đối chiếu chính của finding đã chuyển sang v2.
+
 Ngày 14/11/2026: khôi phục riêng công thức fingerprint cho Gitleaks, Semgrep,
 Trivy và OWASP ZAP. Không khôi phục toàn bộ parser cũ. Giữ UI, References,
 notification, kiểm tra báo cáo hợp lệ, lịch sử scan và bảo toàn false positive.
