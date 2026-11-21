@@ -53,17 +53,23 @@ class SemgrepPartialImportTests(TestCase):
             item.update(check_id="test.same-rule", path="/home/gitlab-runner/builds/demo/app.js",
                         start={"line": i + 1, "col": 1})
             item["extra"].update(fingerprint="requires login", lines="requires login")
+            item["extra"]["severity"] = "ERROR" if i < 7 else ("WARNING" if i < 34 else "INFO")
         report["errors"] = [partial_warning("app/views/%s.html" % i) for i in range(10)]
         response = self.upload(report).json()
         self.assertFalse(response["report_complete"])
         self.assertFalse(response["auto_close_enabled"])
         self.assertEqual(len(response["warnings"]), 10)
         self.assertEqual(int(response["result"]["total_vul"]), 35)
+        self.assertEqual({key: int(value) for key, value in response["result"].items()}, {
+            "total_vul": 35, "total_critical": 0, "total_high": 7,
+            "total_medium": 27, "total_low": 0, "total_info": 1,
+        })
         self.assertEqual(self.findings().count(), 36)
         self.assertEqual(self.findings().filter(vuln_status="Open").count(), 36)
         self.assertEqual(scans_query.all_vuln(self.project.uu_id, "total"), 36)
         scan = StaticScansDb.objects.get(scan_id=response["scan_id"])
         self.assertEqual(len(scan.import_warnings), 10)
+        self.assertEqual(scan.info_vul, 1)
         self.upload(report)
         self.assertEqual(self.findings().count(), 36)
         self.assertTrue(Notification.objects.filter(recipient=self.user, verb__contains="incomplete scan").exists())
@@ -71,6 +77,7 @@ class SemgrepPartialImportTests(TestCase):
         self.client.force_login(self.user)
         listing = self.client.get(reverse("staticscanners:list_scans"))
         self.assertContains(listing, "Incomplete scan")
+        self.assertContains(listing, "<th>Informational</th>", html=True)
         details = self.client.get(reverse("staticscanners:list_vuln"), {"scan_id": scan.scan_id})
         self.assertContains(details, "auto-close skipped")
         self.assertContains(details, "app/views/0.html")

@@ -160,6 +160,7 @@ class UploadScanResult(APIView):
         total_high = len(all_web_data.filter(severity="High"))
         total_medium = len(all_web_data.filter(severity="Medium"))
         total_low = len(all_web_data.filter(severity="Low"))
+        total_info = all_web_data.filter(severity__in=("Information", "Informational")).count()
         return Response(
             {
                 "message": "Scan Data Uploaded",
@@ -172,6 +173,7 @@ class UploadScanResult(APIView):
                     "total_high": escape(total_high),
                     "total_medium": escape(total_medium),
                     "total_low": escape(total_low),
+                    "total_info": escape(total_info),
                 },
             }
         )
@@ -184,6 +186,7 @@ class UploadScanResult(APIView):
         total_high = len(all_sast_data.filter(severity="High"))
         total_medium = len(all_sast_data.filter(severity="Medium"))
         total_low = len(all_sast_data.filter(severity="Low"))
+        total_info = all_sast_data.filter(severity__in=("Information", "Informational")).count()
         return Response(
             {
                 "message": "Scan Data Uploaded",
@@ -196,6 +199,7 @@ class UploadScanResult(APIView):
                     "total_high": escape(total_high),
                     "total_medium": escape(total_medium),
                     "total_low": escape(total_low),
+                    "total_info": escape(total_info),
                 },
             }
         )
@@ -207,6 +211,7 @@ class UploadScanResult(APIView):
         total_high = len(all_cloud_data.filter(severity="High"))
         total_medium = len(all_cloud_data.filter(severity="Medium"))
         total_low = len(all_cloud_data.filter(severity="Low"))
+        total_info = all_cloud_data.filter(severity__in=("Information", "Informational")).count()
         return Response(
             {
                 "message": "Scan Data Uploaded",
@@ -218,6 +223,7 @@ class UploadScanResult(APIView):
                     "total_high": escape(total_high),
                     "total_medium": escape(total_medium),
                     "total_low": escape(total_low),
+                    "total_info": escape(total_info),
                     "total_critical": escape(total_critical),
                 },
             }
@@ -230,6 +236,7 @@ class UploadScanResult(APIView):
         total_high = len(all_net_data.filter(severity="High"))
         total_medium = len(all_net_data.filter(severity="Medium"))
         total_low = len(all_net_data.filter(severity="Low"))
+        total_info = all_net_data.filter(severity__in=("Information", "Informational")).count()
         return Response(
             {
                 "message": "Scan Data Uploaded",
@@ -242,6 +249,7 @@ class UploadScanResult(APIView):
                     "total_high": escape(total_high),
                     "total_medium": escape(total_medium),
                     "total_low": escape(total_low),
+                    "total_info": escape(total_info),
                 },
             }
         )

@@ -38,6 +38,11 @@ data = ""
 
 
 def all_manual_scan(project_id, query):
+    if query == "info":
+        return PentestScanResultsDb.objects.filter(
+            project__uu_id=project_id, vuln_status="Open",
+            severity__in=("Information", "Informational"),
+        ).count()
     all_manual_scan = None
     if query == "total":
         all_manual_scan_scan = PentestScanDb.objects.filter(
@@ -233,6 +238,8 @@ def _static_finding_count(project_id, query):
         return result_qs.filter(severity="Medium").count()
     if query == "low":
         return result_qs.filter(severity="Low").count()
+    if query == "info":
+        return result_qs.filter(severity__in=("Information", "Informational")).count()
     return 0
 
 
@@ -255,10 +262,15 @@ def _zap_finding_count(project_id, query):
         return findings.filter(severity="Medium").count()
     if query == "low":
         return findings.filter(severity="Low").count()
+    if query == "info":
+        return findings.filter(severity__in=("Information", "Informational")).count()
     return 0
 
 
 def all_vuln(project_id, query):
+    if query == "info":
+        return sum(counter(project_id, query) for counter in (
+            all_static, all_web, all_net, all_cloud, all_manual_scan))
     all_vuln = 0
 
     if query == "total":
@@ -467,6 +479,7 @@ def all_web(project_id, query):
         "high": "high_vul",
         "medium": "medium_vul",
         "low": "low_vul",
+        "info": "info_vul",
     }
     field_name = scan_count_fields.get(query)
     if field_name is None:
@@ -483,6 +496,9 @@ def all_web(project_id, query):
 
 
 def all_net(project_id, query):
+    if query == "info":
+        return NetworkScanDb.objects.filter(project__uu_id=project_id).aggregate(
+            total=Sum("info_vul"))["total"] or 0
     all_net = 0
 
     if query == "total":
@@ -566,6 +582,9 @@ def all_static(project_id, query):
 
 
 def all_cloud(project_id, query):
+    if query == "info":
+        return CloudScansDb.objects.filter(project__uu_id=project_id).aggregate(
+            total=Sum("info_vul"))["total"] or 0
     all_cloud = 0
 
     if query == "total":

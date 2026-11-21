@@ -52,7 +52,10 @@ def main():
             scan_model, result_model = (WebScansDb, WebScanResultsDb) if web else (StaticScansDb, StaticScanResultsDb)
             scan = scan_model.objects.create(scan_id=uuid.uuid4(), scanner=scanner, project=fixture.project,
                                              organization=fixture.org, scan_status="100", total_dup=0)
-            for severity in ("Critical", "High", "Medium", "Low"):
+            severities = ("Critical", "High", "Medium", "Low")
+            if scanner in ("Semgrep", "Zap"):
+                severities += ("Informational",)
+            for severity in severities:
                 finding = result_model.objects.create(scan_id=scan.scan_id, vuln_id=uuid.uuid4(), scanner=scanner,
                     title=scanner + " sample finding", severity=severity, false_positive="No",
                     vuln_status="Open", vuln_duplicate="No", project=fixture.project, organization=fixture.org)
@@ -89,7 +92,11 @@ def main():
             page.screenshot(path=str(output / "latest-page.png"), full_page=True)
             page.locator('.preloader').wait_for(state='hidden', timeout=10000)
             page.screenshot(path=str(output / "overview-desktop.png"), full_page=True)
-            assert page.locator('.dashboard-stat-card').count() == 5
+            assert page.locator('.dashboard-stat-card').count() == 6
+            assert page.locator('.dashboard-stat-card--info .dashboard-stat-value').inner_text() == '2'
+            assert page.locator('#data_table th', has_text='Informational').count() == 1
+            assert page.evaluate("pie.data.labels") == ['Critical', 'High', 'Medium', 'Low', 'Informational']
+            assert page.evaluate("pie.data.datasets[0].data") == [4, 4, 4, 4, 2]
             assert page.locator('.notification-count').inner_text() == "1"
             page.locator('#notification-toggle').click()
             page.locator('.notification-item').wait_for(state='visible')
@@ -98,12 +105,15 @@ def main():
             page.wait_for_function("document.querySelector('.notification-count').hidden")
             page.goto(PreviewServer.live_server_url + "/dashboard/proj_data/?uu_id=" + str(fixture.project.uu_id), wait_until="networkidle")
             page.locator('.preloader').wait_for(state='hidden')
-            assert page.locator('.dashboard-stat-card').count() == 7
+            assert page.locator('.dashboard-stat-card').count() == 8
+            assert page.locator('.dashboard-stat-card--info .dashboard-stat-value').inner_text() == '2'
+            assert page.evaluate("ProChart.data.datasets[0].data") == [4, 4, 4, 4, 2]
             for tab in page.locator('.scan-tabs [role=tab]').all():
                 tab.click()
                 assert tab.get_attribute('aria-selected') == 'true'
                 assert page.locator('#' + tab.get_attribute('aria-controls')).is_visible()
             page.locator('#tab-static').click()
+            assert page.locator('#scan-static th', has_text='Informational').count() == 1
             page.screenshot(path=str(output / "project-desktop.png"), full_page=True)
             page.set_viewport_size({"width": 390, "height": 844})
             page.reload(wait_until="networkidle")

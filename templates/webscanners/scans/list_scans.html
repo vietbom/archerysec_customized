@@ -111,7 +111,7 @@
                                         <th>High</th>
                                         <th>Medium</th>
                                         <th>Low</th>
-                                        <th>Info</th>
+                                        <th>Informational</th>
                                         <th>Duplicates</th>
                                     </tr>
                                     </thead>
@@ -158,7 +158,7 @@
                                         <td><span class="badge badge-pill badge-danger">{{data.high_vul}}</span></td>
                                         <td><span class="badge badge-pill badge-warning">{{data.medium_vul}}</span></td>
                                         <td><span class="badge badge-pill badge-info">{{data.low_vul}}</span></td>
-                                        <td><span class="badge badge-pill badge-info">{{data.info_vul}}</span></td>
+                                        <td><span class="badge badge-pill badge-secondary">{{data.info_vul|default:0}}</span></td>
                                         <td><span class="badge badge-pill badge-secondary">{{data.total_dup}}</span></td>
                                     </tr>
                                     {% endfor %}

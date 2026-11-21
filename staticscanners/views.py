@@ -178,7 +178,7 @@ class SastScanVulnDelete(APIView):
         total_high = len(all_vuln.filter(severity="High"))
         total_medium = len(all_vuln.filter(severity="Medium"))
         total_low = len(all_vuln.filter(severity="Low"))
-        total_info = len(all_vuln.filter(severity="Information"))
+        total_info = len(all_vuln.filter(severity__in=("Information", "Informational")))
 
         StaticScansDb.objects.filter(
             scan_id=scan_id, organization=request.user.organization

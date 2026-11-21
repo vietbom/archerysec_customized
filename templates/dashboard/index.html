@@ -14,11 +14,12 @@
 {% include "dashboard/_stat_card.html" with count=total_count_project.total_vuln__sum label="Open findings" severity="All" tone="neutral" caption="Across all projects" %}
 {% include "dashboard/_stat_card.html" with count=critical_count_project.total_critical__sum label="Critical" severity="Critical" tone="critical" caption="Highest priority" %}
 {% include "dashboard/_stat_card.html" with count=high_count_project.total_high__sum label="High" severity="High" tone="high" caption="Needs attention" %}
+{% include "dashboard/_stat_card.html" with count=info_counts.total label="Informational" severity="Informational" tone="info" caption="Included in open findings" %}
 {% include "dashboard/_stat_card.html" with count=close_count_project.total_close__sum label="Closed" severity="All_Closed" tone="closed" caption="Remediated findings" %}
 {% include "dashboard/_stat_card.html" with count=false_count_project.total_false__sum label="False Positive" severity="All_False_Positive" tone="muted" caption="Excluded from open findings" %}
 </div>
 <div class="dashboard-overview-grid">
-<section class="card dashboard-chart-card"><div class="card-body"><h2>Vulnerability trend</h2><p class="dashboard-description">Open findings by month - {{ current_year }}</p><div class="dashboard-chart-frame"><canvas id="myChart" role="img" aria-label="Vulnerability trend"></canvas></div></div></section>
+<section class="card dashboard-chart-card"><div class="card-body"><h2>Vulnerability trend</h2><p class="dashboard-description">Critical to Low by month - {{ current_year }}. Informational is shown in the severity distribution.</p><div class="dashboard-chart-frame"><canvas id="myChart" role="img" aria-label="Vulnerability trend"></canvas></div></div></section>
 <section class="card dashboard-chart-card"><div class="card-body"><h2>Severity distribution</h2><p class="dashboard-description">Prioritize the most severe findings first</p><div class="dashboard-chart-frame"><canvas id="pie" role="img" aria-label="Severity distribution"></canvas></div></div></section>
 </div><div class="dashboard-section-heading"><h2>Exposure by source</h2><span>Open findings by severity</span></div><div class="dashboard-source-grid">
 <section class="card dashboard-chart-card"><div class="card-body"><div class="dashboard-source-heading"><h3>Web</h3><strong>{{ web_count_project.total_web__sum|default:0 }}</strong></div><div class="dashboard-chart-frame dashboard-chart-frame--small"><canvas id="webpie" role="img" aria-label="Web findings"></canvas></div></div></section>
@@ -69,6 +70,7 @@
                                             <th>High</th>
                                             <th>Medium</th>
                                             <th>Low</th>
+                                            <th>Informational</th>
                                             <th>Delete</th>
                                         </tr>
                                         </thead>
@@ -95,6 +97,7 @@
                                                 <td> <span
                                                         class="badge badge-pill badge-info">{{ data.total_low }}</span>
                                                 </td>
+                                                <td><span class="badge badge-pill badge-secondary">{{ data.total_info|default:0 }}</span></td>
 
 
                                                 <td class="confirm-delete">
@@ -200,9 +203,10 @@
                         {{ critical_count_project.total_critical__sum|default:0 }},
                         {{ high_count_project.total_high__sum|default:0 }},
                         {{ medium_count_project.total_medium__sum|default:0 }},
-                        {{ low_count_project.total_low__sum|default:0 }}
+                        {{ low_count_project.total_low__sum|default:0 }},
+                        {{ info_counts.total|default:0 }}
                     ], backgroundColor: [
-                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9', '#64748b'
 
                     ],
                 }],
@@ -212,7 +216,8 @@
                     'Critical',
                     'High',
                     'Medium',
-                    'Low'
+                    'Low',
+                    'Informational'
                 ]
             },
         });
@@ -226,9 +231,10 @@
                         {{ critical_web_count_project.critical_web__sum|default:0 }},
                         {{ high_web_count_project.high_web__sum|default:0 }},
                         {{ medium_web_count_project.medium_web__sum|default:0 }},
-                        {{ low_web_count_project.low_web__sum|default:0 }}
+                        {{ low_web_count_project.low_web__sum|default:0 }},
+                        {{ info_counts.web|default:0 }}
                     ], backgroundColor: [
-                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9', '#64748b'
 
                     ],
                 }],
@@ -238,7 +244,8 @@
                     'Critical',
                     'High',
                     'Medium',
-                    'Low'
+                    'Low',
+                    'Informational'
                 ]
             },
         });
@@ -251,9 +258,10 @@
                         {{ critical_net_count_project.critical_net__sum|default:0 }},
                         {{ high_net_count_project.high_net__sum|default:0 }},
                         {{ medium_net_count_project.medium_net__sum|default:0 }},
-                        {{ low_net_count_project.low_net__sum|default:0 }}
+                        {{ low_net_count_project.low_net__sum|default:0 }},
+                        {{ info_counts.net|default:0 }}
                     ], backgroundColor: [
-                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9', '#64748b'
 
                     ],
                 }],
@@ -263,7 +271,8 @@
                     'Critical',
                     'High',
                     'Medium',
-                    'Low'
+                    'Low',
+                    'Informational'
                 ]
             },
         });
@@ -276,9 +285,10 @@
                         {{ critical_static_count_project.critical_static__sum|default:0 }},
                         {{ high_static_count_project.high_static__sum|default:0 }},
                         {{ medium_static_count_project.medium_static__sum|default:0 }},
-                        {{ low_static_count_project.low_static__sum|default:0 }}
+                        {{ low_static_count_project.low_static__sum|default:0 }},
+                        {{ info_counts.static|default:0 }}
                     ], backgroundColor: [
-                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9', '#64748b'
 
                     ],
                 }],
@@ -288,7 +298,8 @@
                     'Critical',
                     'High',
                     'Medium',
-                    'Low'
+                    'Low',
+                    'Informational'
                 ]
             },
         });
@@ -301,9 +312,10 @@
                         {{ critical_cloud_count_project.critical_cloud__sum|default:0 }},
                         {{ high_cloud_count_project.high_cloud__sum|default:0 }},
                         {{ medium_cloud_count_project.medium_cloud__sum|default:0 }},
-                        {{ low_cloud_count_project.low_cloud__sum|default:0 }}
+                        {{ low_cloud_count_project.low_cloud__sum|default:0 }},
+                        {{ info_counts.cloud|default:0 }}
                     ], backgroundColor: [
-                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9'
+                        '#9f1239', '#ef4444', '#f59e0b', '#0ea5e9', '#64748b'
 
                     ],
                 }],
@@ -313,7 +325,8 @@
                     'Critical',
                     'High',
                     'Medium',
-                    'Low'
+                    'Low',
+                    'Informational'
                 ]
             },
         });

@@ -79,6 +79,14 @@ def dashboard(request):
 
     all_project = ProjectDb.objects.filter(organization=request.user.organization)
 
+    from dashboard.services import informational_summary
+    info_counts = dict.fromkeys(("total", "static", "web", "net", "cloud"), 0)
+    for project in all_project:
+        counts = informational_summary(project)
+        project.total_info = counts["total"]
+        for category, count in counts.items():
+            info_counts[category] += count
+
     current_year = datetime.datetime.now().year
 
     all_notify = Notification.objects.filter(recipient=request.user).unread()
@@ -98,6 +106,7 @@ def dashboard(request):
         "dashboard/index.html",
         {
             "all_project": all_project,
+            "info_counts": info_counts,
             "scanners": scanners,
             "total_count_project": ProjectDb.objects.filter(
                 organization=request.user.organization
@@ -269,6 +278,8 @@ def proj_data(request):
     all_high = scans_query.all_vuln(project_id=uu_id, query="high")
     all_medium = scans_query.all_vuln(project_id=uu_id, query="medium")
     all_low = scans_query.all_vuln(project_id=uu_id, query="low")
+    from dashboard.services import informational_summary
+    info_counts = informational_summary(selected_project)
 
     tota_vuln = scans_query.all_vuln(project_id=uu_id, query="total")
 
@@ -288,6 +299,7 @@ def proj_data(request):
             "all_high": all_high,
             "all_medium": all_medium,
             "all_low": all_low,
+            "info_counts": info_counts,
             "all_web_critical": scans_query.all_web(project_id=uu_id, query="critical"),
             "all_web_high": scans_query.all_web(project_id=uu_id, query="high"),
             "all_web_medium": scans_query.all_web(project_id=uu_id, query="medium"),
@@ -365,7 +377,7 @@ def all_high_vuln(request):
     }
     categories = {"Web": "web_all_high", "Static": "sast_all_high",
                   "Cloud": "cloud_all_high", "Network": "net_all_high"}
-    allowed = {"All", "Total", "Critical", "High", "Medium", "Low",
+    allowed = {"All", "Total", "Critical", "High", "Medium", "Low", "Informational",
                "All_False_Positive", "False", "All_Closed", "Close"} | set(categories)
     if severity not in allowed:
         return HttpResponseBadRequest("Invalid finding filter")
@@ -389,6 +401,8 @@ def all_high_vuln(request):
                 findings = findings.exclude(false_positive__in=("Yes", "Duplicate")).exclude(vuln_duplicate="Yes")
             if severity in ("Critical", "High", "Medium", "Low"):
                 findings = findings.filter(severity=severity)
+            elif severity == "Informational":
+                findings = findings.filter(severity__in=("Information", "Informational"))
             elif severity in categories:
                 if manual:
                     findings = findings.filter(pentest_type=severity.lower())

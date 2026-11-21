@@ -324,6 +324,7 @@
                                     <th>Medium</th>
 
                                     <th>Low</th>
+                                    <th>Informational</th>
 
                                 </tr>
                                 </thead>
@@ -403,6 +404,7 @@
                                                 {{ data.low_vul }}
                                             </span>
                                         </td>
+                                        <td><span class="badge badge-pill badge-secondary">{{ data.info_vul|default:0 }}</span></td>
 
                                     </tr>
 
@@ -487,6 +489,7 @@
                                     <th>Medium</th>
 
                                     <th>Low</th>
+                                    <th>Informational</th>
 
                                 </tr>
 
@@ -569,6 +572,7 @@
                                                 {{ data.low_vul }}
                                             </span>
                                         </td>
+                                        <td><span class="badge badge-pill badge-secondary">{{ data.info_vul|default:0 }}</span></td>
 
                                     </tr>
 
@@ -653,6 +657,7 @@
                                     <th>Medium</th>
 
                                     <th>Low</th>
+                                    <th>Informational</th>
 
                                 </tr>
 
@@ -733,6 +738,7 @@
                                                 {{ data.low_vul }}
                                             </span>
                                         </td>
+                                        <td><span class="badge badge-pill badge-secondary">{{ data.info_vul|default:0 }}</span></td>
 
                                     </tr>
 
@@ -817,6 +823,7 @@
                                     <th>Medium</th>
 
                                     <th>Low</th>
+                                    <th>Informational</th>
 
                                 </tr>
 
@@ -897,6 +904,7 @@
                                                 {{ data.low_vul }}
                                             </span>
                                         </td>
+                                        <td><span class="badge badge-pill badge-secondary">{{ data.info_vul|default:0 }}</span></td>
 
                                     </tr>
 
@@ -1208,13 +1216,15 @@
                     {{ all_high }},
                     {{ all_medium }},
                     {{ all_low }},
+                    {{ info_counts.total|default:0 }},
                 ],
 
                 backgroundColor: [
                     '#9f1239',
                     '#ef4444',
                     '#f59e0b',
-                    '#0ea5e9'
+                    '#0ea5e9',
+                    '#64748b'
                 ],
 
                 label: 'Open findings'
@@ -1226,6 +1236,7 @@
                 'High',
                 'Medium',
                 'Low',
+                'Informational',
             ]
 
         },
@@ -1266,13 +1277,15 @@
                     {{ all_high }},
                     {{ all_medium }},
                     {{ all_low }},
+                    {{ info_counts.total|default:0 }},
                 ],
 
                 backgroundColor: [
                     '#9f1239',
                     '#ef4444',
                     '#f59e0b',
-                    '#0ea5e9'
+                    '#0ea5e9',
+                    '#64748b'
                 ],
 
                 label: '',
@@ -1284,6 +1297,7 @@
                 'High',
                 'Medium',
                 'Low',
+                'Informational',
             ]
 
         },
@@ -1328,13 +1342,15 @@
                     {{ all_web_high }},
                     {{ all_web_medium }},
                     {{ all_web_low }},
+                    {{ info_counts.web|default:0 }},
                 ],
 
                 backgroundColor: [
                     '#9f1239',
                     '#ef4444',
                     '#f59e0b',
-                    '#0ea5e9'
+                    '#0ea5e9',
+                    '#64748b'
                 ],
 
                 label: 'Open findings'
@@ -1346,6 +1362,7 @@
                 'High',
                 'Medium',
                 'Low',
+                'Informational',
             ]
 
         },
@@ -1386,13 +1403,15 @@
                     {{ all_network_high }},
                     {{ all_network_medium }},
                     {{ all_network_low }},
+                    {{ info_counts.net|default:0 }},
                 ],
 
                 backgroundColor: [
                     '#9f1239',
                     '#ef4444',
                     '#f59e0b',
-                    '#0ea5e9'
+                    '#0ea5e9',
+                    '#64748b'
                 ],
 
                 label: 'Open findings'
@@ -1404,6 +1423,7 @@
                 'High',
                 'Medium',
                 'Low',
+                'Informational',
             ]
 
         },
@@ -1444,13 +1464,15 @@
                     {{ all_static_high }},
                     {{ all_static_medium }},
                     {{ all_static_low }},
+                    {{ info_counts.static|default:0 }},
                 ],
 
                 backgroundColor: [
                     '#9f1239',
                     '#ef4444',
                     '#f59e0b',
-                    '#0ea5e9'
+                    '#0ea5e9',
+                    '#64748b'
                 ],
 
                 label: 'Open findings'
@@ -1462,6 +1484,7 @@
                 'High',
                 'Medium',
                 'Low',
+                'Informational',
             ]
 
         },
@@ -1502,13 +1525,15 @@
                     {{ all_cloud_high }},
                     {{ all_cloud_medium }},
                     {{ all_cloud_low }},
+                    {{ info_counts.cloud|default:0 }},
                 ],
 
                 backgroundColor: [
                     '#9f1239',
                     '#ef4444',
                     '#f59e0b',
-                    '#0ea5e9'
+                    '#0ea5e9',
+                    '#64748b'
                 ],
 
                 label: 'Open findings'
@@ -1520,6 +1545,7 @@
                 'High',
                 'Medium',
                 'Low',
+                'Informational',
             ]
 
         },

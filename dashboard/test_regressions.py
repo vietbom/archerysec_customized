@@ -151,6 +151,60 @@ class DashboardRegressionTests(TestCase):
         self.assertEqual(result.status_code, 200)
         self.assertEqual(list(result.context["sast_all_high"].values_list("project_id", flat=True)), [self.project.pk])
 
+    def test_informational_counts_and_links_cover_legacy_labels_and_exclude_triaged_findings(self):
+        from utility.finding_status import refresh_scan_counts
+
+        scan = self.new_scan("Semgrep")
+        findings = []
+        for severity, status, fp, duplicate in (
+            ("Informational", "Open", "No", "No"),
+            ("Information", "Open", "No", "No"),
+            ("High", "Open", "No", "No"),
+            ("Informational", "Closed", "No", "No"),
+            ("Informational", "Open", "Yes", "No"),
+            ("Informational", "Open", "No", "Yes"),
+        ):
+            findings.append(StaticScanResultsDb.objects.create(
+                project=self.project, organization=self.org, scan_id=scan.scan_id,
+                vuln_id=uuid.uuid4(), scanner="Semgrep", title="Info fixture",
+                severity=severity, vuln_status=status, false_positive=fp, vuln_duplicate=duplicate))
+        web_scan = self.new_scan("Zap", web=True)
+        web_finding = WebScanResultsDb.objects.create(project=self.project, organization=self.org,
+            scan_id=web_scan.scan_id, vuln_id=uuid.uuid4(), scanner="Zap", title="ZAP informational",
+            severity="Informational", vuln_status="Open", false_positive="No", vuln_duplicate="No")
+        other_project = ProjectDb.objects.create(project_name="Other tenant", organization=self.other_org)
+        StaticScanResultsDb.objects.create(project=other_project, organization=self.other_org,
+            scan_id=uuid.uuid4(), vuln_id=uuid.uuid4(), severity="Informational", vuln_status="Open")
+        for result_model, scan_model, current_scan in (
+            (StaticScanResultsDb, StaticScansDb, scan), (WebScanResultsDb, WebScansDb, web_scan)):
+            refresh_scan_counts(result_model, scan_model, current_scan.scan_id, self.org)
+
+        overview = self.client.get(reverse("dashboard:dashboard"))
+        self.assertEqual(overview.context["info_counts"], {"total": 3, "static": 2, "web": 1, "net": 0, "cloud": 0})
+        project_row = list(overview.context["all_project"])[0]
+        self.assertEqual((project_row.total_vuln, project_row.total_high, project_row.total_info), (4, 1, 3))
+        soup = BeautifulSoup(overview.content, "html.parser")
+        headers = [th.get_text(strip=True) for th in soup.select("#data_table thead th")]
+        cells = soup.select_one("#data_table tbody tr").find_all("td", recursive=False)
+        self.assertEqual(cells[headers.index("Informational")].get_text(strip=True), "3")
+        self.assertEqual(soup.select_one(".dashboard-stat-card--info .dashboard-stat-value").get_text(strip=True), "3")
+
+        detail = self.client.get(reverse("dashboard:proj_data"), {"uu_id": self.project.uu_id})
+        self.assertEqual(detail.context["info_counts"]["total"], 3)
+        self.assertContains(detail, "<th>Informational</th>", count=4, html=True)
+        self.assertEqual(scans_query.all_vuln(self.project.uu_id, "info"), 3)
+        for scope in ("none", self.project.uu_id):
+            listing = self.client.get(reverse("dashboard:all_high_vuln"), {
+                "project_id": scope, "severity": "Informational"})
+            self.assertEqual(list(listing.context["sast_all_high"]), findings[:2])
+            self.assertEqual(list(listing.context["web_all_high"]), [web_finding])
+
+        self.mark(findings[0])
+        detail = self.client.get(reverse("dashboard:proj_data"), {"uu_id": self.project.uu_id})
+        self.assertEqual(detail.context["info_counts"]["total"], 2)
+        scan.refresh_from_db()
+        self.assertEqual((scan.total_vul, scan.info_vul), (2, 1))
+
     def test_empty_dashboards_render_and_use_one_chart_library(self):
         response = self.client.get(reverse("dashboard:dashboard"))
         self.assertEqual(response.status_code, 200)

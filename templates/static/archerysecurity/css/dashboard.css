@@ -10,8 +10,8 @@ body.dashboard-home, body.project-dashboard { background: #f4f7fb; color: #33415
 .dashboard-about { margin: -8px 0 24px; color: #64748b; font-size: 12px; }
 .dashboard-about summary { cursor: pointer; width: fit-content; }
 .dashboard-about p { padding: 12px 0 0; line-height: 1.8; }
-.dashboard-stat-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
-.dashboard-stat-grid--project { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.dashboard-stat-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; margin-bottom: 24px; }
+.dashboard-stat-grid--project { grid-template-columns: repeat(8, minmax(0, 1fr)); }
 .dashboard-stat-card { --stat-accent: #0f766e; position: relative; display: flex; flex-direction: column; gap: 10px; padding: 20px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 6px rgba(15,23,42,.025); color: #334155; transition: border-color .16s, box-shadow .16s; }
 .dashboard-stat-card::before { content: ''; width: 24px; height: 3px; background: var(--stat-accent); border-radius: 3px; }
 .dashboard-stat-card:hover { border-color: var(--stat-accent); color: #0f172a; text-decoration: none; box-shadow: 0 4px 14px rgba(15,23,42,.07); }
@@ -23,6 +23,7 @@ body.dashboard-home, body.project-dashboard { background: #f4f7fb; color: #33415
 .dashboard-stat-card--high { --stat-accent: #dc2626; }
 .dashboard-stat-card--medium { --stat-accent: #b45309; }
 .dashboard-stat-card--low { --stat-accent: #0284c7; }
+.dashboard-stat-card--info { --stat-accent: #64748b; }
 .dashboard-stat-card--closed { --stat-accent: #0f766e; }
 .dashboard-stat-card--muted { --stat-accent: #64748b; }
 .dashboard-stat-card--neutral { --stat-accent: #334155; }

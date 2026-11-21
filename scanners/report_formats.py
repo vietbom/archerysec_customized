@@ -253,11 +253,14 @@ def xml_fingerprint_value(element):
 
 def zap_report(root):
     require(root.tag == "OWASPZAPReport", "ZAP requires an OWASPZAPReport XML report.")
-    sites = list(root.iter("site"))
+    # ZAP reports also contain insights/insight/site and stoppingInsight/site
+    # text fields. Only direct report children describe targets with alerts.
+    sites = root.findall("site")
     require(bool(sites) and all(site.get("name") for site in sites), "ZAP report must contain named sites, including sites with no alerts.")
     findings = []
     for site in sites:
-        require(site.find("alerts") is not None, "ZAP site is missing its alerts element.")
+        alerts = site.find("alerts")
+        require(alerts is not None, "ZAP site is missing its alerts element.")
         url = site.get("name")
         try:
             parsed_url = urlsplit(url)
@@ -266,7 +269,7 @@ def zap_report(root):
             site_identity = normalized_url(url)
         except ValueError as error:
             raise ReportValidationError("ZAP site URL is invalid.") from error
-        for item in site.iter("alertitem"):
+        for item in alerts.findall("alertitem"):
             alert = xml_value(item.find("alert"))
             title = xml_value(item.find("name"), alert)
             rule = xml_value(item.find("alertRef"), "") or xml_value(item.find("pluginid"), "") or alert or title
