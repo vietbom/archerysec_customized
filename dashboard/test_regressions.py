@@ -191,7 +191,7 @@ class DashboardRegressionTests(TestCase):
 
         detail = self.client.get(reverse("dashboard:proj_data"), {"uu_id": self.project.uu_id})
         self.assertEqual(detail.context["info_counts"]["total"], 3)
-        self.assertContains(detail, "<th>Informational</th>", count=4, html=True)
+        self.assertContains(detail, "<th>Informational</th>", count=5, html=True)
         self.assertEqual(scans_query.all_vuln(self.project.uu_id, "info"), 3)
         for scope in ("none", self.project.uu_id):
             listing = self.client.get(reverse("dashboard:all_high_vuln"), {

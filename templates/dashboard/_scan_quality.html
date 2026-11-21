@@ -1,0 +1,14 @@
+{% if scan_health.incomplete %}
+<section class="alert alert-warning dashboard-scan-quality" role="status">
+    <strong>Scan coverage needs attention</strong>
+    <p>{{ scan_health.warning_count }} parser warnings in the latest incomplete reports across {{ scan_health.project_count }} project{{ scan_health.project_count|pluralize }}.
+        Parser warnings are separate from Informational findings and are excluded from all severity totals.</p>
+    <p>Detected findings were imported. Older findings absent from an incomplete report remain unchanged until a complete scan can verify them.</p>
+    <details><summary>Review affected reports</summary><ul>
+    {% for row in scan_health.incomplete %}
+        <li><a href="{% url row.namespace|add:':list_vuln' %}?scan_id={{ row.latest_scan.scan_id }}">{{ row.project.project_name }} · {{ row.scanner }}</a>:
+            {{ row.warning_count }} parser warnings; {{ row.not_in_latest }} open findings not observed in the latest report.</li>
+    {% endfor %}
+    </ul></details>
+</section>
+{% endif %}

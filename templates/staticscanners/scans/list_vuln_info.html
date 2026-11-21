@@ -68,6 +68,7 @@ $(document).on('click', '.confirm-delete', function(){
                                 </label></th>
                                 <th>Vulnerability</th>
                                 <th>Filename</th>
+                                <th>Package location</th>
                                 <th>Risk</th>
                                 <th>JIRA Ticket</th>
                                 <th>Status</th>
@@ -95,6 +96,7 @@ $(document).on('click', '.confirm-delete', function(){
                                     <a href="{% url 'staticscanners:scan_details' %}?scan_id={{data.scan_id}}&vuln_id={{data.vuln_id}}&scanner={{ data.scanner }}">{{data.title}}</a>
                                 </td>
                                 <td>{{data.fileName}}</td>
+                                <td>{{ data.filePath|default:'—' }}</td>
                                 <td><span
                                         class="badge badge-pill badge-{{data.severity_color}}">{{data.severity}}</span>
                                 </td>

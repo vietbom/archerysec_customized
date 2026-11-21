@@ -100,6 +100,7 @@
                         <div class="card-body">
                             <div class="col-md-6">
                                 File: {{ data.fileName }}
+                                {% if data.filePath %}<br>Package / source location: {{ data.filePath }}{% endif %}
                             </div>
                         </div>
                     </div>

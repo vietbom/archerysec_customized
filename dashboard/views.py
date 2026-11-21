@@ -79,7 +79,8 @@ def dashboard(request):
 
     all_project = ProjectDb.objects.filter(organization=request.user.organization)
 
-    from dashboard.services import informational_summary
+    from dashboard.services import informational_summary, native_scanner_summaries
+    scanner_summary = native_scanner_summaries(all_project)
     info_counts = dict.fromkeys(("total", "static", "web", "net", "cloud"), 0)
     for project in all_project:
         counts = informational_summary(project)
@@ -106,6 +107,8 @@ def dashboard(request):
         "dashboard/index.html",
         {
             "all_project": all_project,
+            "scanner_summaries": scanner_summary["tools"],
+            "scan_health": scanner_summary["health"],
             "info_counts": info_counts,
             "scanners": scanners,
             "total_count_project": ProjectDb.objects.filter(
@@ -239,6 +242,9 @@ def proj_data(request):
     except ValidationError:
         return HttpResponseBadRequest("Invalid project ID")
     project_dat = ProjectDb.objects.filter(pk=selected_project.pk)
+    from dashboard.services import native_scanner_summaries, refresh_project_summary
+    refresh_project_summary(selected_project)
+    scanner_summary = native_scanner_summaries([selected_project])
     web_scan_dat = WebScansDb.objects.filter(
         project__uu_id=uu_id, organization=request.user.organization
     )
@@ -289,6 +295,8 @@ def proj_data(request):
         {
             "project_id": uu_id,
             "selected_project": selected_project,
+            "scanner_summaries": scanner_summary["rows"],
+            "scan_health": scanner_summary["health"],
             "tota_vuln": tota_vuln,
             "all_vuln": scans_query.all_vuln(project_id=uu_id, query="total"),
             "total_web": scans_query.all_web(project_id=uu_id, query="total"),
@@ -361,6 +369,11 @@ def all_high_vuln(request):
 
     scope = request.GET.get("project_id", "none")
     severity = request.GET.get("severity", "All")
+    scanner = request.GET.get("scanner", "")
+    scanner_keys = {"gitleaks": ("sast_all_high", "gitleaks"), "semgrep": ("sast_all_high", "Semgrep"),
+                    "trivy": ("sast_all_high", "Trivy"), "zap": ("web_all_high", "Zap")}
+    if scanner and scanner.lower() not in scanner_keys:
+        return HttpResponseBadRequest("Invalid scanner filter")
     project = None
     if scope != "none":
         try:
@@ -386,6 +399,9 @@ def all_high_vuln(request):
                "message": Notification.objects.filter(recipient=request.user).unread()}
     for key, model in groups.items():
         findings = model.objects.filter(organization=request.user.organization)
+        if scanner:
+            group, label = scanner_keys[scanner.lower()]
+            findings = findings.filter(scanner__iexact=label) if key == group else findings.none()
         if project:
             findings = findings.filter(project=project)
         manual = key == "pentest_all_high"
@@ -394,7 +410,7 @@ def all_high_vuln(request):
         elif severity in ("Close", "All_Closed"):
             findings = findings.filter(vuln_status="Closed")
             if not manual:
-                findings = findings.exclude(false_positive__in=("Yes", "Duplicate"))
+                findings = findings.exclude(false_positive__in=("Yes", "Duplicate")).exclude(vuln_duplicate="Yes")
         else:
             findings = findings.filter(vuln_status="Open")
             if not manual:

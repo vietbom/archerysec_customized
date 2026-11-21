@@ -4,9 +4,13 @@
 {% if scan.import_warnings %}
 <div class="alert alert-warning" role="alert">
     <strong>Incomplete scan — auto-close skipped.</strong>
-    Findings detected by Semgrep were imported. Findings absent from this report remain unchanged because some files were only partially parsed.
-    <details class="mt-2"><summary>{{ scan.import_warnings|length }} scan warnings</summary>
+    <p>Findings detected by Semgrep were imported. Findings absent from this report remain unchanged because some files were only partially parsed.</p>
+    <p><strong>Parser warnings are not Informational findings.</strong> They describe incomplete analysis of source files and are not included in vulnerability totals or severity counts.</p>
+    <details class="mt-2"><summary>{{ scan.import_warnings|length }} parser warnings · view affected files</summary>
         <ul>{% for warning in scan.import_warnings %}<li><strong>{{ warning.path }}</strong>: {{ warning.message }}</li>{% endfor %}</ul>
+    </details>
+    <details class="mt-2"><summary>How to resolve incomplete coverage</summary>
+        <p>Review the affected files and the selected Semgrep rules/parser. Fix invalid syntax or use rules that support the template language. Run a new full scan after correcting the cause. Do not remove warnings from the JSON or exclude files simply to make the scan appear complete.</p>
     </details>
 </div>
 {% endif %}
@@ -20,6 +24,7 @@
                         <h1 class="card-title">Vulnerability List</h1>
                     </div>
                     <br>
+                    <p class="text-muted">Rows group findings with the same title, risk and status. The Findings column counts individual findings; open a group to review its locations.</p>
                     <div class="row">
                         <div class="table-responsive">
                            <table id="data_table" class="table table-bordered data-table table-fixed"
@@ -29,6 +34,7 @@
                                     <th>Vulnerability</th>
                                     <th>Status</th>
                                     <th>Risk</th>
+                                    <th>Findings</th>
                                 </tr>
                                 </thead>
                                  <tbody>{% for data in all_vuln %}
@@ -61,6 +67,7 @@
                                         {% endif %}
                                         <td><span class="badge badge-pill badge-{{ data.severity_color }}">{{ data.severity }}</span>
                                         </td>
+                                        <td>{{ data.finding_count }}</td>
                                     </tr>
                                  {% endfor %}
                                 </tbody>

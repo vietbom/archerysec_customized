@@ -105,7 +105,7 @@
                                     <div class="card-body">
                                         <div class="card-body">
                                             <table class="table table-bordered">
-                                                <tbody id="instance"></tbody>
+                                                <tbody id="instance-{{ data.vuln_id }}"></tbody>
                                             </table>
                                         </div>
                                     </div>
@@ -115,7 +115,7 @@
                                     <div class="card-body">
                                         <div class="card-body">
                                             <table class="table table-bordered">
-                                                <tbody id="instance"></tbody>
+                                                <tbody id="instance-{{ data.vuln_id }}"></tbody>
                                             </table>
                                         </div>
                                     </div>
@@ -310,17 +310,25 @@
         </div>
 
         <script type="text/javascript">
-            var json = {{ data.instance | safe }}
-                $.each(json, function (key, data) {
-
-                    $.each(data, function (key2, data2) {
-                        var tbody = document.getElementById('instance');
-                        var tr = "<tr>";
-                        tr += "<td>" + key2 + "</td>" + "<td>" + data2.toString() + "</td></tr>";
-                        tbody.innerHTML += tr;
+            (function () {
+                var tbody = document.getElementById('instance-{{ data.vuln_id }}');
+                if (!tbody) return;
+                try {
+                    var instances = JSON.parse("{{ data.instance|escapejs }}");
+                    $.each(instances, function (index, instance) {
+                        var heading = tbody.insertRow().insertCell();
+                        heading.colSpan = 2;
+                        heading.textContent = 'Evidence ' + (Number(index) + 1);
+                        $.each(instance, function (key, value) {
+                            var row = tbody.insertRow();
+                            row.insertCell().textContent = key;
+                            row.insertCell().textContent = value == null ? '' : String(value);
+                        });
                     });
-
-                });
+                } catch (error) {
+                    tbody.insertRow().insertCell().textContent = "{{ data.instance|escapejs }}";
+                }
+            }());
         </script>
     {% endfor %}
 

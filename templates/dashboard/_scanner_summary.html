@@ -1,0 +1,18 @@
+<section class="card dashboard-scanner-summary">
+    <div class="card-body">
+        <h2>Current findings by scanner</h2>
+        <p class="dashboard-description">Each finding is counted once per project and scanner. Report history is not added together. Open = Critical + High + Medium + Low + Informational.</p>
+        <div class="table-responsive"><table class="table table-bordered scanner-summary-table">
+            <thead><tr><th>Scanner</th><th>Open</th><th>Critical</th><th>High</th><th>Medium</th><th>Low</th><th>Informational</th><th>Closed</th><th>False Positive</th><th>Open in latest report{% if not project_id %}s{% endif %}</th><th>Not in latest report{% if not project_id %}s{% endif %}</th><th>Scan coverage</th></tr></thead>
+            <tbody>{% for row in scanner_summaries %}
+            <tr data-scanner="{{ row.key }}">
+                <td>{{ row.scanner }}</td>
+                <td><a href="{% url 'dashboard:all_high_vuln' %}?project_id={{ project_id|default:'none' }}&amp;scanner={{ row.key }}&amp;severity=All">{{ row.open }}</a></td>
+                <td>{{ row.critical }}</td><td>{{ row.high }}</td><td>{{ row.medium }}</td><td>{{ row.low }}</td><td>{{ row.info }}</td>
+                <td>{{ row.closed }}</td><td>{{ row.false_positive }}</td><td>{{ row.report_open }}</td><td>{{ row.not_in_latest }}</td>
+                <td>{% if row.warning_count %}<span class="badge badge-warning">{{ row.warning_count }} parser warnings</span>{% elif not row.has_reports %}<span class="text-muted">No reports</span>{% else %}No reported scan warnings{% endif %}</td>
+            </tr>{% endfor %}</tbody>
+        </table></div>
+        <p class="dashboard-description">False positives and closed findings are excluded from Open. Findings absent from an incomplete scan remain open; parser warnings do not add findings. Coverage reflects the configured scan scope.</p>
+    </div>
+</section>

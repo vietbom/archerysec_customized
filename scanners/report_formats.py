@@ -3,6 +3,7 @@
 Thesis changes TH-01..TH-04: docs/scanner-upgrade-2026-11-17.md.
 """
 from dataclasses import dataclass
+from collections import defaultdict
 import json
 import re
 from urllib.parse import urljoin, urlsplit
@@ -48,6 +49,8 @@ class Finding:
     suppression_hash: str = ""
     identity_hash: str = ""
     identity_payload: dict = None
+    identity_aliases: tuple = ()
+    source_enriched: bool = False
 
 
 def identified(legacy_payload, values, scanner, kind, **fields):
@@ -85,7 +88,7 @@ def gitleaks_report(data):
         fingerprint_data = {"scanner": "gitleaks", "report_fingerprint": native_id} if native_id else {
             "scanner": "gitleaks", "rule": rule, "file": path, "start_line": line,
             "commit": item.get("Commit") or item.get("commit")}
-        details = {"Rule": rule, "Match": item.get("Match") or item.get("offender"),
+        details = {"Rule": rule, "Description": item.get("Description"), "Match": item.get("Match") or item.get("offender"),
                    "Commit": item.get("Commit") or item.get("commit"),
                    "Repository": item.get("Repo") or item.get("repo"),
                    "Message": item.get("Message") or item.get("commitMessage"),
@@ -118,9 +121,43 @@ def semgrep_import_warnings(data):
     return warnings
 
 
+def semgrep_source_identities(results):
+    """CI-supplied hashes contain no source code; repeated matches stay distinct."""
+    sources, matches, contexts = {}, defaultdict(set), defaultdict(set)
+    for item in rows(results, "Semgrep results"):
+        extra = item.get("extra") or {}
+        if not isinstance(extra, dict) or extra.get("is_ignored") is True:
+            continue
+        source = extra.get("archerysec")
+        if source is None:
+            continue
+        require(isinstance(source, dict) and source.get("version") == 1,
+                "Semgrep ArcherySec source identity must use version 1.")
+        require(isinstance(item.get("check_id"), str) and bool(item["check_id"])
+                and isinstance(item.get("path"), str) and bool(item["path"]),
+                "Each Semgrep finding needs check_id and path.")
+        path, digest, context = (source.get(key) for key in ("relative_path", "match_sha256", "context_sha256"))
+        require(isinstance(path, str) and bool(path) and not path.startswith(("/", "\\")) and ":" not in path
+                and ".." not in path.replace("\\", "/").split("/"), "Semgrep source path must be repository-relative.")
+        path = normalized_path(path)
+        report_path = normalized_path(item.get("path") or "")
+        require(report_path == path or report_path.endswith("/" + path), "Semgrep source path does not match the report path.")
+        require(isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest) is not None,
+                "Semgrep source match hash must be SHA-256.")
+        require(context is None or (isinstance(context, str) and re.fullmatch(r"[0-9a-f]{64}", context) is not None),
+                "Semgrep source context hash must be SHA-256.")
+        key = (item.get("check_id"), path, digest)
+        location = json.dumps([item.get("start"), item.get("end")], sort_keys=True)
+        matches[key].add(location)
+        contexts[key + (context,)].add(location)
+        sources[id(item)] = (path, digest, context, key)
+    return sources, matches, contexts
+
+
 def semgrep_report(data):
     require(isinstance(data, dict) and isinstance(data.get("results"), list), "Semgrep JSON must contain a results array.")
     semgrep_import_warnings(data)
+    sources, matches, contexts = semgrep_source_identities(data["results"])
     findings = []
     for item in rows(data["results"], "Semgrep results"):
         rule, path = item.get("check_id"), item.get("path")
@@ -130,18 +167,28 @@ def semgrep_report(data):
         extra = extra or {}
         if extra.get("is_ignored") is True:
             continue
-        native_id = extra.get("fingerprint") or extra.get("match_based_id") or item.get("match_based_id")
-        require(native_id is None or isinstance(native_id, str), "Semgrep fingerprint must be a string.")
-        native_id = (native_id or "").strip()
-        if native_id.lower() in ("requires login", "not found", "..."):
-            native_id = ""
+        native_ids = (extra.get("fingerprint"), extra.get("match_based_id"), item.get("match_based_id"))
+        require(all(value is None or isinstance(value, str) for value in native_ids), "Semgrep fingerprint must be a string.")
+        native_id = next((value.strip() for value in native_ids if value and value.strip()
+                          and value.strip().lower() not in ("requires login", "not found", "...")), "")
         start = position(item.get("start"), "Semgrep start")
         finish = position(item.get("end"), "Semgrep end")
         location = start if start["line"] is not None else finish
         require(bool(native_id) or location["line"] is not None,
                 "Semgrep needs a native fingerprint or start/end line for unambiguous identity.")
-        stable_fields = {"rule": rule, "path": normalized_path(path)}
-        stable_fields.update({"native_id": native_id} if native_id else {"position": location})
+        legacy_fields = {"rule": rule, "path": normalized_path(path)}
+        legacy_fields.update({"native_id": native_id} if native_id else {"position": location})
+        stable_fields = dict(legacy_fields)
+        source = sources.get(id(item))
+        if source:
+            relative_path, digest, context, key = source
+            stable_fields["path"] = relative_path
+            if not native_id and len(matches[key]) == 1:
+                stable_fields.pop("position", None)
+                stable_fields["source_match"] = digest
+            elif not native_id and context and len(contexts[key + (context,)]) == 1:
+                stable_fields.pop("position", None)
+                stable_fields.update(source_match=digest, source_context=context)
         metadata = extra.get("metadata", "Not Found")
         reference_metadata = metadata if isinstance(metadata, dict) else {}
         risk, color = severity(extra.get("severity"))
@@ -158,6 +205,19 @@ def semgrep_report(data):
             "references": serialize_references(reference_metadata.get("references"), reference_metadata.get("source"),
                 reference_metadata.get("source-rule-url"), reference_metadata.get("shortlink"), extra.get("references")),
         }, "Semgrep", "sast", **stable_fields))
+        aliases = []
+        if native_id:
+            aliases.append(identity("Semgrep", "sast", rule=rule, path=normalized_path(path), position=location)[0])
+        if source:
+            # Adopt exact prior evidence/position; never guess by rule/file.
+            aliases.append(identity("Semgrep", "sast", **legacy_fields)[0])
+            source_fields = {"rule": rule, "path": relative_path, "source_match": digest}
+            if len(matches[key]) == 1:
+                aliases.append(identity("Semgrep", "sast", **source_fields)[0])
+            if context and len(contexts[key + (context,)]) == 1:
+                aliases.append(identity("Semgrep", "sast", **source_fields, source_context=context)[0])
+        findings[-1].identity_aliases = tuple(set(aliases) - {findings[-1].identity_hash})
+        findings[-1].source_enriched = bool(source)
     return findings
 
 
@@ -187,9 +247,9 @@ def trivy_report(data):
                 "severity": risk, "target": target, "type": target_type, "class": target_class}
             stable_target = "os-root" if data.get("ArtifactType") == "container_image" and target_class == "os-pkgs" else normalized_path(target)
             findings.append(identified(fingerprint_data, {
-                "title": vuln_id, "fileName": package, "filePath": target, "severity": risk, "severity_color": color,
+                "title": vuln_id, "fileName": package, "filePath": package_path or target, "severity": risk, "severity_color": color,
                 "description": "\n\n".join(str(value) for value in (item.get("Description", "Not Found"), title, target, target_type,
-                    target_class, vuln_id, package, installed, fixed)),
+                    target_class, vuln_id, package, installed, fixed, "Package path: " + (package_path or target))),
                 "solution": "%s can be fixed by upgrading version: %s" % (package, fixed),
                 "references": serialize_references(item.get("References"), item.get("PrimaryURL")),
             }, "Trivy", "vulnerability", artifact_type=data.get("ArtifactType"), target=stable_target,
@@ -317,4 +377,15 @@ def zap_report(root):
                 single_values = dict(values, instance=json.dumps([instance] if instance else [], ensure_ascii=False))
                 findings.append(identified(fingerprint_data, single_values, "Zap", "dast", site=site_identity,
                     rule=rule, endpoint=endpoint))
-    return findings, sites[0].get("name")
+    grouped = {}
+    for finding in findings:
+        existing = grouped.get(finding.identity_hash)
+        if existing is None:
+            grouped[finding.identity_hash] = finding
+            continue
+        instances = json.loads(existing.values["instance"])
+        for instance in json.loads(finding.values["instance"]):
+            if instance not in instances:
+                instances.append(instance)
+        existing.values["instance"] = json.dumps(instances, ensure_ascii=False)
+    return list(grouped.values()), sites[0].get("name")

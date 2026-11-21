@@ -22,6 +22,7 @@ from utility.finding_status import mark_finding
 from utility.scan_history import delete_scans, findings_for_scan
 
 from django.shortcuts import HttpResponseRedirect, render
+from django.db.models import Count
 from django.urls import reverse
 from notifications.models import Notification
 from notifications.signals import notify
@@ -216,6 +217,7 @@ class SastScanVulnList(APIView):
                 "scan_id",
             )
             .exclude(vuln_status="Duplicate")
+            .annotate(finding_count=Count("pk", distinct=True))
         )
 
         return render(

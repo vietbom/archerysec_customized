@@ -15,6 +15,8 @@
 </header>
 {% if selected_project %}
 {% include "dashboard/_top_links.html" %}
+{% include "dashboard/_scan_quality.html" %}
+{% include "dashboard/_scanner_summary.html" %}
 <div class="dashboard-overview-grid">
     <section class="card dashboard-chart-card"><div class="card-body"><h2>Severity breakdown</h2><p class="dashboard-description">Open findings requiring remediation</p><div class="dashboard-chart-frame"><canvas id="ProChart" role="img" aria-label="Open findings by severity"></canvas></div></div></section>
     <section class="card dashboard-chart-card"><div class="card-body"><h2>Risk distribution</h2><p class="dashboard-description">False positives and closed findings are excluded</p><div class="dashboard-chart-frame"><canvas id="ProBar" role="img" aria-label="Severity distribution"></canvas></div></div></section>

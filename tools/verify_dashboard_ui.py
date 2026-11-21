@@ -28,6 +28,7 @@ from playwright.sync_api import sync_playwright
 
 from dashboard.test_regressions import DashboardRegressionTests
 from dashboard.views import trend_update
+from projects.models import ProjectDb
 from staticscanners.models import StaticScanResultsDb, StaticScansDb
 from utility.finding_status import refresh_scan_counts
 from webscanners.models import WebScanResultsDb, WebScansDb
@@ -52,6 +53,9 @@ def main():
             scan_model, result_model = (WebScansDb, WebScanResultsDb) if web else (StaticScansDb, StaticScanResultsDb)
             scan = scan_model.objects.create(scan_id=uuid.uuid4(), scanner=scanner, project=fixture.project,
                                              organization=fixture.org, scan_status="100", total_dup=0)
+            if scanner == "Semgrep":
+                scan.import_warnings = [{"type": "PartialParsing", "level": "warn", "path": "view.html", "message": "Template syntax"}] * 10
+                scan.save(update_fields=("import_warnings",))
             severities = ("Critical", "High", "Medium", "Low")
             if scanner in ("Semgrep", "Zap"):
                 severities += ("Informational",)
@@ -63,10 +67,19 @@ def main():
                     triage_url = "/staticscanners/list_vuln_info/?" + urlencode({
                         "scan_id": scan.scan_id, "scan_name": finding.title})
                     triage_id = str(finding.vuln_id)
+                if scanner == "Zap" and severity == "High":
+                    finding.instance = json.dumps([{"uri": "https://app.test", "evidence": evidence} for evidence in (
+                        "First observation", '<img src=x onerror="window.evidenceExecuted=true">', "Third observation")])
+                    finding.save(update_fields=("instance",))
+                    zap_detail_url = "/webscanners/scan_details/?vuln_id=" + str(finding.vuln_id)
             result_model.objects.create(scan_id=scan.scan_id, vuln_id=uuid.uuid4(), scanner=scanner,
                 title="Reviewed false alarm", severity="High", false_positive="Yes", vuln_status="Closed",
                 is_active=False, vuln_duplicate="No", project=fixture.project, organization=fixture.org)
             refresh_scan_counts(result_model, scan_model, scan.scan_id, fixture.org)
+        second_project = ProjectDb.objects.create(project_name="Second project", organization=fixture.org)
+        StaticScanResultsDb.objects.create(project=second_project, organization=fixture.org,
+            scan_id=uuid.uuid4(), vuln_id=uuid.uuid4(), scanner="gitleaks", title="Second project finding",
+            severity="Medium", false_positive="No", vuln_status="Open", vuln_duplicate="No")
         trend_update()
         notify.send(fixture.project, recipient=fixture.user, verb="Semgrep report imported: Application demo - 4 open findings")
         notify.send(fixture.project, recipient=fixture.other_user, verb="Other user's private notification")
@@ -92,11 +105,16 @@ def main():
             page.screenshot(path=str(output / "latest-page.png"), full_page=True)
             page.locator('.preloader').wait_for(state='hidden', timeout=10000)
             page.screenshot(path=str(output / "overview-desktop.png"), full_page=True)
-            assert page.locator('.dashboard-stat-card').count() == 6
+            assert page.locator('.dashboard-stat-card').count() == 8
+            assert page.locator('.dashboard-stat-card--medium .dashboard-stat-value').inner_text() == '5'
+            assert page.locator('.dashboard-stat-card--low .dashboard-stat-value').inner_text() == '4'
             assert page.locator('.dashboard-stat-card--info .dashboard-stat-value').inner_text() == '2'
             assert page.locator('#data_table th', has_text='Informational').count() == 1
             assert page.evaluate("pie.data.labels") == ['Critical', 'High', 'Medium', 'Low', 'Informational']
-            assert page.evaluate("pie.data.datasets[0].data") == [4, 4, 4, 4, 2]
+            assert page.evaluate("pie.data.datasets[0].data") == [4, 4, 5, 4, 2]
+            assert page.locator('.dashboard-scan-quality').is_visible()
+            assert page.locator('.scanner-summary-table tr[data-scanner="semgrep"] td').nth(6).inner_text() == '1'
+            assert page.locator('.scanner-summary-table tr[data-scanner="gitleaks"] td').nth(10).inner_text() == '1'
             assert page.locator('.notification-count').inner_text() == "1"
             page.locator('#notification-toggle').click()
             page.locator('.notification-item').wait_for(state='visible')
@@ -122,10 +140,18 @@ def main():
             page.screenshot(path=str(output / "project-mobile.png"), full_page=True)
             page.goto(PreviewServer.live_server_url + "/dashboard/", wait_until="networkidle")
             page.locator('.preloader').wait_for(state='hidden')
+            assert page.locator('.dashboard-stat-card--medium').is_visible()
+            assert page.locator('.dashboard-stat-card--low').is_visible()
             assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "Overview overflows mobile viewport"
             page.screenshot(path=str(output / "overview-mobile.png"), full_page=True)
             # Exercise the actual modal/form flow on one of several same-title rows.
             page.set_viewport_size({"width": 1440, "height": 1000})
+            page.goto(PreviewServer.live_server_url + zap_detail_url, wait_until="networkidle")
+            page.locator('[data-target="#collapseTwo"]').click()
+            assert page.locator('tbody[id^="instance-"]').inner_text().count('Evidence ') == 3
+            assert page.evaluate('window.evidenceExecuted === undefined')
+            assert page.locator('tbody[id^="instance-"] img').count() == 0
+            page.screenshot(path=str(output / "zap-evidence.png"), full_page=True)
             page.goto(PreviewServer.live_server_url + triage_url, wait_until="networkidle")
             page.locator('[data-target="#commentModal-' + triage_id + '"]').click()
             modal = page.locator('#commentModal-' + triage_id)

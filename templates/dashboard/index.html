@@ -10,14 +10,18 @@
 <details class="dashboard-about"><summary>About this graduation project</summary>
     <p>ĐỒ ÁN TỐT NGHIỆP ĐẠI HỌC - NĂM 2026<br>Xây dựng hệ thống giám sát bề mặt tấn công (Attack Surface Management)<br>Nguyễn Đức Việt - AT190256</p>
 </details>
+{% include "dashboard/_scan_quality.html" %}
 <div class="dashboard-stat-grid">
 {% include "dashboard/_stat_card.html" with count=total_count_project.total_vuln__sum label="Open findings" severity="All" tone="neutral" caption="Across all projects" %}
 {% include "dashboard/_stat_card.html" with count=critical_count_project.total_critical__sum label="Critical" severity="Critical" tone="critical" caption="Highest priority" %}
 {% include "dashboard/_stat_card.html" with count=high_count_project.total_high__sum label="High" severity="High" tone="high" caption="Needs attention" %}
+{% include "dashboard/_stat_card.html" with count=medium_count_project.total_medium__sum label="Medium" severity="Medium" tone="medium" caption="Plan remediation" %}
+{% include "dashboard/_stat_card.html" with count=low_count_project.total_low__sum label="Low" severity="Low" tone="low" caption="Lower priority" %}
 {% include "dashboard/_stat_card.html" with count=info_counts.total label="Informational" severity="Informational" tone="info" caption="Included in open findings" %}
-{% include "dashboard/_stat_card.html" with count=close_count_project.total_close__sum label="Closed" severity="All_Closed" tone="closed" caption="Remediated findings" %}
+{% include "dashboard/_stat_card.html" with count=close_count_project.total_close__sum label="Closed" severity="All_Closed" tone="closed" caption="Closed findings; excludes FP" %}
 {% include "dashboard/_stat_card.html" with count=false_count_project.total_false__sum label="False Positive" severity="All_False_Positive" tone="muted" caption="Excluded from open findings" %}
 </div>
+{% include "dashboard/_scanner_summary.html" %}
 <div class="dashboard-overview-grid">
 <section class="card dashboard-chart-card"><div class="card-body"><h2>Vulnerability trend</h2><p class="dashboard-description">Critical to Low by month - {{ current_year }}. Informational is shown in the severity distribution.</p><div class="dashboard-chart-frame"><canvas id="myChart" role="img" aria-label="Vulnerability trend"></canvas></div></div></section>
 <section class="card dashboard-chart-card"><div class="card-body"><h2>Severity distribution</h2><p class="dashboard-description">Prioritize the most severe findings first</p><div class="dashboard-chart-frame"><canvas id="pie" role="img" aria-label="Severity distribution"></canvas></div></div></section>

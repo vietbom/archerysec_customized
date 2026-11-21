@@ -5,6 +5,6 @@
 {% include "dashboard/_stat_card.html" with scope=project_id count=all_medium label="Medium" severity="Medium" tone="medium" caption="Plan remediation" %}
 {% include "dashboard/_stat_card.html" with scope=project_id count=all_low label="Low" severity="Low" tone="low" caption="Lower priority" %}
 {% include "dashboard/_stat_card.html" with scope=project_id count=info_counts.total label="Informational" severity="Informational" tone="info" caption="Included in open findings" %}
-{% include "dashboard/_stat_card.html" with scope=project_id count=all_closed_vuln label="Closed" severity="Close" tone="closed" caption="Remediated findings" %}
+{% include "dashboard/_stat_card.html" with scope=project_id count=all_closed_vuln label="Closed" severity="Close" tone="closed" caption="Closed findings; excludes FP" %}
 {% include "dashboard/_stat_card.html" with scope=project_id count=all_false_positive label="False Positive" severity="False" tone="muted" caption="Excluded from open findings" %}
 </div>

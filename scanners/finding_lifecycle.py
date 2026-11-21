@@ -44,6 +44,17 @@ def import_findings(findings, result_model, scan_model, project_id, scan_id, req
             raise ReportValidationError("The validated finding is missing its versioned identity.")
         record = observed.get(require_identity) or candidates.filter(
             identity_version=IDENTITY_VERSION, identity_hash=require_identity).first()
+        if record is None and item.identity_aliases:
+            aliases = candidates.filter(identity_version=IDENTITY_VERSION, identity_hash__in=item.identity_aliases)
+            if aliases.count() == 1:
+                record = aliases.first()
+        if record is None and scanner == "Semgrep" and not item.source_enriched:
+            # An exact raw-report replay after source enrichment must not create
+            # a duplicate or downgrade its source identity back to a position.
+            exact = candidates.filter(identity_version=IDENTITY_VERSION, dup_hash=duplicate_hash)
+            if exact.count() == 1:
+                record = exact.first()
+                require_identity = record.identity_hash
         if record is None:
             # Lazy transition: never infer a new identity from formatted text.
             # A v2 row cannot be claimed by another endpoint sharing legacy hash.
