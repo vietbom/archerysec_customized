@@ -18,6 +18,7 @@ from rest_framework import serializers
 
 
 class StaticScanDbSerializer(serializers.Serializer):
+    import_warnings = serializers.JSONField(read_only=True)
     project_name = serializers.CharField(read_only=True)
     scan_id = serializers.UUIDField(required=True, help_text=("Provide ScanId"))
     rescan_id = serializers.CharField(read_only=True)

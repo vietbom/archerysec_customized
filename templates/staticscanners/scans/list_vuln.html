@@ -1,6 +1,15 @@
 {% extends 'dashboard/base.html' %}
 
 {% block body %}
+{% if scan.import_warnings %}
+<div class="alert alert-warning" role="alert">
+    <strong>Incomplete scan — auto-close skipped.</strong>
+    Findings detected by Semgrep were imported. Findings absent from this report remain unchanged because some files were only partially parsed.
+    <details class="mt-2"><summary>{{ scan.import_warnings|length }} scan warnings</summary>
+        <ul>{% for warning in scan.import_warnings %}<li><strong>{{ warning.path }}</strong>: {{ warning.message }}</li>{% endfor %}</ul>
+    </details>
+</div>
+{% endif %}
 
     <div class="row">
         <div class="col-md-12">

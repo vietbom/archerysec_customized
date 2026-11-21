@@ -1,4 +1,4 @@
-"""Atomic full-snapshot imports scoped to one project/branch and scanner."""
+"""Atomic imports; only complete scanner snapshots may close absent findings."""
 import uuid
 
 from django.db import transaction
@@ -13,7 +13,7 @@ from utility.scan_history import history_models, remember_finding_scan
 
 
 @transaction.atomic
-def import_findings(findings, result_model, scan_model, project_id, scan_id, request, scanner, scan_url=None):
+def import_findings(findings, result_model, scan_model, project_id, scan_id, request, scanner, scan_url=None, import_warnings=None):
     # The project is the branch boundary chosen by this deployment. Serializing
     # imports also prevents two concurrent uploads from both creating a finding.
     if request.user.is_authenticated:
@@ -81,6 +81,9 @@ def import_findings(findings, result_model, scan_model, project_id, scan_id, req
     # in this project, including the legitimate zero-findings report.
     stale = candidates.filter(vuln_status="Open").exclude(false_positive__in=("Yes", "Duplicate")).exclude(
         vuln_duplicate="Yes").exclude(pk__in=seen)
+    # Missing findings in a partial scan are not evidence of remediation.
+    if import_warnings:
+        stale = candidates.none()
     changed = seen | set(stale.values_list("pk", flat=True))
     stale.update(vuln_status="Closed", is_active=False)
     affected_scans = set(link_model.objects.filter(finding_id__in=changed).values_list("scan__scan_id", flat=True))
@@ -88,6 +91,8 @@ def import_findings(findings, result_model, scan_model, project_id, scan_id, req
     for affected_scan in affected_scans | {scan_id}:
         refresh_scan_counts(result_model, scan_model, affected_scan, organization)
     updates = {"date_time": now, "scanner": scanner, "scan_status": "100"}
+    if scanner == "Semgrep":
+        updates["import_warnings"] = import_warnings or []
     if scan_url:
         updates["scan_url"] = scan_url
     scan_model.objects.filter(pk=scan.pk).update(**updates)
@@ -95,5 +100,6 @@ def import_findings(findings, result_model, scan_model, project_id, scan_id, req
     from utility.scan_notifications import scan_imported
     trend_update(organization=organization)
     scan.refresh_from_db()
-    scan_imported(request, project_id, "OWASP ZAP" if scanner == "Zap" else scanner, scan.total_vul)
+    scan_imported(request, project_id, "OWASP ZAP" if scanner == "Zap" else scanner, scan.total_vul,
+                  warnings=import_warnings)
     return scan

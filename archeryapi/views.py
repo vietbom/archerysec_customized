@@ -431,7 +431,7 @@ class UploadScanResult(APIView):
 
         # Call the parser
         parser_func = parser_dict["parserFunction"]
-        parser_func(data, project_id, scan_id, request)
+        imported_scan = parser_func(data, project_id, scan_id, request)
 
         db_name = parser_dict.get("dbname", scanner)
         if db_type in ("StaticScans", "WebScans") and db_name.lower() in {
@@ -464,7 +464,12 @@ class UploadScanResult(APIView):
                 }
             )
         else:
-            return return_func(scan_id, project_id, scanner)
+            response = return_func(scan_id, project_id, scanner)
+            if scanner == "semgrepscan":
+                warnings = imported_scan.import_warnings
+                response.data.update(report_complete=not warnings, auto_close_enabled=not warnings,
+                                     warnings=warnings)
+            return response
 
 
 class APIKey(APIView):

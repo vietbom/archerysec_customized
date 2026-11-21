@@ -224,5 +224,6 @@ class SastScanVulnList(APIView):
             {
                 "all_vuln": all_vuln,
                 "scan_id": scan_id,
+                "scan": StaticScansDb.objects.filter(scan_id=scan_id, organization=request.user.organization).first(),
             },
         )

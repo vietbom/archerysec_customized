@@ -92,6 +92,9 @@
                                         </td>
                                 <td>
                                     <a href="{% url 'staticscanners:list_vuln' %}?scan_id={{data.scan_id}}&scanner={{ data.scanner }}">{% firstof data.project_name 'None' %}</a>
+                                    {% if data.import_warnings %}
+                                    <span class="badge badge-warning" title="Partial scan: missing findings were not auto-closed">Incomplete scan · {{ data.import_warnings|length }} warnings</span>
+                                    {% endif %}
                                 </td>
                                 <td>{% with scanType=data.scanner %}
                                     <div class="p-1"><img src="{{ PARSER_DICT | get_icon:scanType }}" alt="user"

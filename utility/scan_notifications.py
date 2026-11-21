@@ -6,7 +6,7 @@ from notifications.signals import notify
 from projects.models import ProjectDb
 
 
-def scan_imported(request, project_id, scanner, total):
+def scan_imported(request, project_id, scanner, total, warnings=None):
     project = ProjectDb.objects.get(pk=project_id)
     user = request.user
     if user.is_authenticated:
@@ -18,4 +18,5 @@ def scan_imported(request, project_id, scanner, total):
     for recipient in recipients:
         notify.send(project, recipient=recipient,
                     verb="%s report imported: %s — %s open findings" % (
-                        scanner, project.project_name, total))
+                        scanner, project.project_name, total) + (
+                            " — incomplete scan; auto-close skipped (%s warnings)" % len(warnings) if warnings else ""))

@@ -34,6 +34,7 @@ class StaticScansDb(models.Model):
     rescan_id = models.TextField(blank=True, null=True)
     scan_date = models.TextField(blank=True)
     scan_status = models.TextField(blank=True)
+    import_warnings = models.JSONField(default=list, blank=True)
     project = models.ForeignKey(
         "projects.ProjectDb", on_delete=models.CASCADE, null=True
     )

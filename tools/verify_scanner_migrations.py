@@ -86,3 +86,22 @@ with connection.schema_editor() as editor:
 assert StaticScanFinding._meta.db_table not in connection.introspection.table_names()
 assert legacy_model.objects.get(pk=legacy.pk).note == 'Preserve triage'
 print('Lifecycle migrations: apply, backfill, preserved triage, uniqueness and rollback passed (isolated SQLite).')
+
+# 0041 adds report completeness warnings without rewriting historical scans.
+warnings_migration = import_module('staticscanners.migrations.0041_staticscansdb_import_warnings').Migration(
+    '0041_staticscansdb_import_warnings', 'staticscanners')
+before_warnings = ProjectState.from_apps(apps)
+before_warnings.remove_field('staticscanners', 'staticscansdb', 'import_warnings')
+with connection.schema_editor() as editor:
+    warnings_migration.unapply(before_warnings, editor)
+old_scan_model = before_warnings.apps.get_model('staticscanners', 'StaticScansDb')
+assert old_scan_model.objects.filter(pk=scan.pk).exists()
+with connection.schema_editor() as editor:
+    warnings_migration.apply(before_warnings.clone(), editor)
+assert StaticScansDb.objects.get(pk=scan.pk).import_warnings == []
+StaticScansDb.objects.filter(pk=scan.pk).update(import_warnings=[{'type': 'PartialParsing', 'path': 'view.html'}])
+assert StaticScansDb.objects.get(pk=scan.pk).import_warnings[0]['path'] == 'view.html'
+with connection.schema_editor() as editor:
+    warnings_migration.unapply(before_warnings, editor)
+assert old_scan_model.objects.filter(pk=scan.pk).exists()
+print('Semgrep report warnings migration: historical default, JSON round-trip and rollback passed (isolated SQLite).')

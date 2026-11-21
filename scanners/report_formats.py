@@ -102,9 +102,25 @@ def gitleaks_report(data):
     return findings
 
 
+def semgrep_import_warnings(data):
+    """Only recoverable partial-parser warnings may accompany imported results."""
+    errors = data.get("errors", [])
+    require(errors is None or isinstance(errors, list), "Semgrep errors must be an array.")
+    warnings = []
+    for error in rows(errors, "Semgrep errors"):
+        kind = error.get("type")
+        kind = kind[0] if isinstance(kind, list) and kind else kind
+        require(kind == "PartialParsing" and str(error.get("level", "")).lower() in ("warn", "warning"),
+                "Semgrep reports scan errors; upload a complete successful scan before auto-closing findings.")
+        message, path = error.get("message", "Partial parsing"), error.get("path", "")
+        require(isinstance(message, str) and isinstance(path, str), "Semgrep warning path/message must be strings.")
+        warnings.append({"type": "PartialParsing", "level": "warn", "path": path, "message": message})
+    return warnings
+
+
 def semgrep_report(data):
     require(isinstance(data, dict) and isinstance(data.get("results"), list), "Semgrep JSON must contain a results array.")
-    require(not data.get("errors"), "Semgrep reports scan errors; upload a complete successful scan before auto-closing findings.")
+    semgrep_import_warnings(data)
     findings = []
     for item in rows(data["results"], "Semgrep results"):
         rule, path = item.get("check_id"), item.get("path")
