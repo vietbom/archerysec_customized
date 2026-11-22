@@ -85,7 +85,8 @@ def import_findings(findings, result_model, scan_model, project_id, scan_id, req
                 "vuln_status", "is_active", "vuln_duplicate", "false_positive_hash", "updated_time"))
         else:
             record.save()
-        link_model.objects.get_or_create(scan=scan, finding=record)
+        link_model.objects.get_or_create(scan=scan, finding=record,
+                                         defaults={"observed_severity": record.severity or "Low"})
         seen.add(record.pk)
         observed[require_identity] = record
     # A validated complete report is an authoritative snapshot for this scanner
@@ -95,12 +96,10 @@ def import_findings(findings, result_model, scan_model, project_id, scan_id, req
     # Missing findings in a partial scan are not evidence of remediation.
     if import_warnings:
         stale = candidates.none()
-    changed = seen | set(stale.values_list("pk", flat=True))
     stale.update(vuln_status="Closed", is_active=False)
-    affected_scans = set(link_model.objects.filter(finding_id__in=changed).values_list("scan__scan_id", flat=True))
-    affected_scans.update(candidates.filter(pk__in=changed).values_list("scan_id", flat=True))
-    for affected_scan in affected_scans | {scan_id}:
-        refresh_scan_counts(result_model, scan_model, affected_scan, organization)
+    # Only the imported report gets new totals; historical observations do not
+    # shrink when their canonical findings close or change in a later upload.
+    refresh_scan_counts(result_model, scan_model, scan_id, organization)
     updates = {"date_time": now, "scanner": scanner, "scan_status": "100"}
     if scanner == "Semgrep":
         updates["import_warnings"] = import_warnings or []

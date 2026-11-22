@@ -61,7 +61,7 @@ upgraded = StaticScanResultsDb.objects.get(pk=legacy.pk)
 assert upgraded.identity_hash == ''
 assert upgraded.identity_version == 0
 assert (upgraded.false_positive, upgraded.note) == ('Yes', 'Preserve triage')
-assert StaticScanFinding.objects.get(finding=upgraded).scan_id == scan.pk
+assert StaticScanFinding.objects.values_list("scan_id", flat=True).get(finding=upgraded) == scan.pk
 for model, name in ((StaticScanResultsDb, 'unique_static_finding_identity'), (WebScanResultsDb, 'unique_web_finding_identity')):
     with connection.cursor() as cursor:
         constraints = connection.introspection.get_constraints(cursor, model._meta.db_table)

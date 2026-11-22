@@ -127,6 +127,7 @@ class StaticScanResultsDb(models.Model):
 class StaticScanFinding(models.Model):
     scan = models.ForeignKey(StaticScansDb, on_delete=models.CASCADE, related_name="finding_links")
     finding = models.ForeignKey(StaticScanResultsDb, on_delete=models.CASCADE, related_name="scan_links")
+    observed_severity = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=("scan", "finding"), name="unique_static_scan_finding")]

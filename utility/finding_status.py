@@ -2,10 +2,10 @@
 import hashlib
 
 from django.db import transaction
-from django.db.models import Count, Q
+from django.db.models import Case, CharField, Count, F, Q, When
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
-from utility.scan_history import findings_for_scan
+from utility.scan_history import findings_for_scan, remember_finding_scan
 
 
 class FindingStatusInput(serializers.Serializer):
@@ -17,20 +17,44 @@ class FindingStatusInput(serializers.Serializer):
 
 
 def refresh_scan_counts(result_model, scan_model, scan_id, organization):
-    findings = findings_for_scan(result_model, scan_id, organization)
-    active = findings.filter(vuln_status="Open").exclude(
-        false_positive__in=("Yes", "Duplicate")
-    ).exclude(vuln_duplicate="Yes")
-    counts = active.aggregate(
+    scan = scan_model.objects.filter(scan_id=scan_id, organization=organization).first()
+    if scan is None:
+        return
+    if (scan.scanner or "").lower() in ("gitleaks", "semgrep", "trivy", "zap"):
+        # Native report totals describe observations, not the remaining open
+        # subset. Keep legacy direct memberships before counting report links.
+        for finding in result_model.objects.filter(
+            scan_id=scan_id, organization=organization, project_id=scan.project_id,
+            scanner__iexact=scan.scanner,
+        ).exclude(scan_links__scan=scan).iterator():
+            remember_finding_scan(finding, scan_id)
+        observations = scan.finding_links.filter(
+            finding__organization=organization, finding__project_id=scan.project_id,
+            finding__scanner__iexact=scan.scanner,
+        )
+        counted = observations.exclude(finding__false_positive__in=("Yes", "Duplicate")).exclude(
+            finding__vuln_duplicate="Yes").annotate(report_severity=Case(
+                When(observed_severity="", then=F("finding__severity")),
+                default=F("observed_severity"), output_field=CharField(),
+            ))
+        duplicates = observations.filter(finding__vuln_duplicate="Yes")
+    else:
+        # Keep the behavior of the other scanner integrations unchanged.
+        findings = findings_for_scan(result_model, scan_id, organization)
+        counted = findings.filter(vuln_status="Open").exclude(
+            false_positive__in=("Yes", "Duplicate")).exclude(vuln_duplicate="Yes").annotate(
+                report_severity=F("severity"))
+        duplicates = findings.filter(vuln_duplicate="Yes")
+    counts = counted.aggregate(
         total_vul=Count("pk"),
-        critical_vul=Count("pk", filter=Q(severity="Critical")),
-        high_vul=Count("pk", filter=Q(severity="High")),
-        medium_vul=Count("pk", filter=Q(severity="Medium")),
-        low_vul=Count("pk", filter=Q(severity="Low")),
-        info_vul=Count("pk", filter=Q(severity__in=("Information", "Informational"))),
+        critical_vul=Count("pk", filter=Q(report_severity="Critical")),
+        high_vul=Count("pk", filter=Q(report_severity="High")),
+        medium_vul=Count("pk", filter=Q(report_severity="Medium")),
+        low_vul=Count("pk", filter=Q(report_severity="Low")),
+        info_vul=Count("pk", filter=Q(report_severity__in=("Information", "Informational"))),
     )
-    counts["total_dup"] = findings.filter(vuln_duplicate="Yes").count()
-    scan_model.objects.filter(scan_id=scan_id, organization=organization).update(**counts)
+    counts["total_dup"] = duplicates.count()
+    scan_model.objects.filter(pk=scan.pk).update(**counts)
 
 
 @transaction.atomic

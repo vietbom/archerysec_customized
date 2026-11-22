@@ -203,7 +203,9 @@ class DashboardRegressionTests(TestCase):
         detail = self.client.get(reverse("dashboard:proj_data"), {"uu_id": self.project.uu_id})
         self.assertEqual(detail.context["info_counts"]["total"], 2)
         scan.refresh_from_db()
-        self.assertEqual((scan.total_vul, scan.info_vul), (2, 1))
+        # The report also observed the non-FP informational finding now Closed;
+        # current dashboard totals above still exclude it.
+        self.assertEqual((scan.total_vul, scan.info_vul), (3, 2))
 
     def test_empty_dashboards_render_and_use_one_chart_library(self):
         response = self.client.get(reverse("dashboard:dashboard"))

@@ -22,7 +22,8 @@ def remember_finding_scan(finding, scan_id):
     scan_model, link_model = history_models(type(finding))
     for scan in scan_model.objects.filter(scan_id=scan_id, project_id=finding.project_id,
                                           organization_id=finding.organization_id):
-        link_model.objects.get_or_create(scan=scan, finding=finding)
+        link_model.objects.get_or_create(scan=scan, finding=finding,
+                                         defaults={"observed_severity": finding.severity or "Low"})
 
 
 @transaction.atomic

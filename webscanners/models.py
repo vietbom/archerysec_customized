@@ -135,6 +135,7 @@ class WebScanFinding(models.Model):
 
     scan = models.ForeignKey(WebScansDb, on_delete=models.CASCADE, related_name="finding_links")
     finding = models.ForeignKey(WebScanResultsDb, on_delete=models.CASCADE, related_name="scan_links")
+    observed_severity = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=("scan", "finding"), name="unique_web_scan_finding")]

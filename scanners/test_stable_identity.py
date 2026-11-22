@@ -230,16 +230,16 @@ class StableIdentityLifecycleTests(TestCase):
         self.assertEqual(WebScanResultsDb.objects.filter(project=self.project).count(), 2)
         self.assertEqual(len(old.scan_links.all()), 2)
 
-    def test_old_report_counters_track_new_severity_and_auto_close(self):
+    def test_old_report_counters_preserve_observed_severity_after_auto_close(self):
         report = make_report("semgrepscan", ["A"])
         first = self.upload("semgrepscan", report)
         changed = changed_metadata("semgrepscan", report)
         self.upload("semgrepscan", changed)
         first.refresh_from_db()
-        self.assertEqual((first.high_vul, first.medium_vul, first.total_vul), (0, 1, 1))
+        self.assertEqual((first.high_vul, first.medium_vul, first.total_vul), (1, 0, 1))
         self.upload("semgrepscan", make_report("semgrepscan", []))
         first.refresh_from_db()
-        self.assertEqual(first.total_vul, 0)
+        self.assertEqual(first.total_vul, 1)
 
     def test_partial_failure_does_not_write_identity_or_close_existing(self):
         report = make_report("semgrepscan", ["A"])
